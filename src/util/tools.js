@@ -1,22 +1,22 @@
 /* eslint-disable no-console */
 export default {
   getExtension(name) {
-    var index = name.lastIndexOf(".") || 0;
+    let index = name.lastIndexOf(".") || 0;
     if (index > 0) {
       return name.substring(index + 1, name.length).toLowerCase();
     }
     return "";
   },
   generateListToMap(list, keyName, valueName) {
-    var result = {};
-    for (var i = 0; i < list.length; i++) {
-      var item = list[i];
+    let result = {};
+    for (let i = 0; i < list.length; i++) {
+      let item = list[i];
       result[item[keyName]] = item[valueName];
     }
     return result;
   },
   findIndexInList(list, key, keyName) {
-    for (var i = 0; i < list.length; i++) {
+    for (let i = 0; i < list.length; i++) {
       if (key === list[i][keyName]) {
         return i;
       }
@@ -24,13 +24,12 @@ export default {
     return -1;
   },
   databaseUpdate(settings) {
-    console.log("database update before:", settings);
     if (
       !settings["data"]["databaseVersion"] ||
       settings["data"]["databaseVersion"] < 1
     ) {
       settings["data"]["databaseVersion"] = 1;
-      settings["data"]["fileExtension"] = "txt,java,py,c,cpp,html,css,vue";
+      settings["data"]["fileExtension"] = "txt,md,markdown,json,xml,java,py,c,cpp,html,css,vue,ts";
       settings["data"]["pictureExtension"] = "png,jpg,jpeg,bmp,svg,ico";
     }
     if (
@@ -38,9 +37,6 @@ export default {
       settings["data"]["databaseVersion"] < 2
     ) {
       settings["data"]["databaseVersion"] = 2;
-      settings["data"]["preview"] = {
-        native: false
-      };
     }
     if (
       !settings["data"]["databaseVersion"] ||
@@ -49,6 +45,14 @@ export default {
       settings["data"]["databaseVersion"] = 3;
       settings["data"]["videoExtension"] = "mp4,flv";
       settings["data"]["audioExtension"] = "mp3,ogg,wav";
+    }
+    if (
+      !settings["data"]["databaseVersion"] ||
+      settings["data"]["databaseVersion"] < 4
+    ) {
+      settings["data"]["databaseVersion"] = 4;
+      settings["data"]["isAutoSearch"] = true;
+      settings["data"]["isShowTempDirAllFiles"] = true;
     }
     console.log("database update finish:", settings);
     return settings;

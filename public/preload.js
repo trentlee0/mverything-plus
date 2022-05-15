@@ -156,6 +156,14 @@ var r=n(20),i=n(21),o=n(8);function s(){return u.TYPED_ARRAY_SUPPORT?2147483647:
     kMDItemWhereFroms: parseArrayOfStrings,
     kMDItemWhiteBalance: parseInt
   }
+  let searchSpawn = null
+  const killPrevSpawn = (search = null) => {
+    if (searchSpawn) {
+      searchSpawn.kill()
+      searchSpawn = null
+    }
+    searchSpawn = search
+  }
   const spotlight = (query, onlyName = true, dir = null, attrs = []) => {
     if (node_process.platform !== 'darwin')
       throw new Error(node_process.platform + ' is not supported.')
@@ -171,7 +179,7 @@ var r=n(20),i=n(21),o=n(8);function s(){return u.TYPED_ARRAY_SUPPORT?2147483647:
     const search = node_child.spawn('mdfind', args, {
       stdio: ['ignore', 'pipe', 'ignore']
     })
-
+    killPrevSpawn(search)
     const results = search.stdout
       .pipe(split('\0'))
       .pipe(map.obj((row) => {
@@ -211,6 +219,7 @@ var r=n(20),i=n(21),o=n(8);function s(){return u.TYPED_ARRAY_SUPPORT?2147483647:
   window.unfocus = () => utools.subInputBlur()
   window.isfocus = false
 
+  window.killMdfind = () => killPrevSpawn()
   window.find = (name, onlyName, dir, callback) => {
     new Promise((resolve, reject) => {
         var tempData = [];
@@ -221,7 +230,8 @@ var r=n(20),i=n(21),o=n(8);function s(){return u.TYPED_ARRAY_SUPPORT?2147483647:
             "kMDItemFSSize",
             "kMDItemFSNodeCount",
             "kMDItemFSCreationDate",
-            "kMDItemFSContentChangeDate"
+            "kMDItemFSContentChangeDate",
+            "kMDItemLastUsedDate"
           ])
           .on("data", data => {
             tempData.push(data);

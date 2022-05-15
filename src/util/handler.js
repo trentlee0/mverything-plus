@@ -1,9 +1,8 @@
 /* eslint-disable no-console */
 import icons from "./icon";
+
 export default {
   handle(items, highFilter, keyWord, keyMap) {
-    console.log(highFilter, keyWord);
-
     if (highFilter !== "") {
       switch (highFilter) {
         // file
@@ -21,21 +20,24 @@ export default {
     }
 
     if (keyWord !== "") {
-      var regex = keyMap[keyWord];
+      let regex = keyMap[keyWord];
       if (regex) {
-        items = items.filter(item => item.path.search(keyMap[keyWord]) > 0);
+        items = items.filter(item => {
+          let re = RegExp(keyMap[keyWord], "i");
+          return item.path.search(re) > 0;
+        });
       }
     }
 
-    var data = [];
-    var length = items.length;
-    for (var i = 0; i < length; i++) {
-      var item = items[i];
+    let data = [];
+    let length = items.length;
+    for (let i = 0; i < length; i++) {
+      let item = items[i];
       if (item === undefined) {
         continue;
       }
 
-      var icon = icons.icon(item);
+      let icon = icons.icon(item);
       data.push({
         path: item.path,
         icon: icon,
@@ -46,6 +48,7 @@ export default {
         count: item.kMDItemFSNodeCount,
         createDate: item.kMDItemFSCreationDate,
         updateDate: item.kMDItemFSContentChangeDate,
+        usedDate: item.kMDItemLastUsedDate,
         text: "",
         thumbnails: "",
         preview: "",
@@ -60,8 +63,8 @@ export default {
   },
   sortByField(field, type) {
     return (a, b) => {
-      var f1 = a[field];
-      var f2 = b[field];
+      let f1 = a[field];
+      let f2 = b[field];
       return (f1 < f2 ? 1 : f1 > f2 ? -1 : 0) * type;
     };
   }

@@ -8,31 +8,47 @@ Vue.use(Vuex);
 const store = new Vuex.Store({
   state: {
     settings: {
-      _id: "Mverything-setting",
+      _id: "setting",
       data: {
         databaseVersion: 1,
         isFindFileContent: false,
         searchRoot: "user",
         searchKey: ":",
-        preview: {
-          native: false
-        },
-        keyList: [],
-        fileExtension: "txt,md,markdown,json,xml,java,py,c,cpp,html,css,vue",
+        keyList: [
+          {
+            "key": "excel",
+            "regex": "\\.xls$|\\.xlsx$|\\.csv$"
+          },
+          {
+            "key": "word",
+            "regex": "\\.doc$|\\.docx$"
+          },
+          {
+            "key": "ppt",
+            "regex": "\\.ppt$|\\.pptx$"
+          },
+          {
+            "key": "zip",
+            "regex": "\\.zip$|\\.rar$|\\.7z$|\\.gz$|\\.bz2$|\\.tar.gz$|\\.tar.bz2$"
+          }
+        ],
+        fileExtension: "txt,md,markdown,json,xml,java,py,c,cpp,html,css,vue,ts",
         pictureExtension: "png,jpg,jpeg,bmp,svg,ico",
         videoExtension: "mp4,flv",
-        audioExtension: "mp3,ogg,wav"
+        audioExtension: "mp3,ogg,wav",
+        isAutoSearch: true,
+        isShowTempDirAllFiles: true
       },
       _rev: ""
     }
   },
   getters: {
-    settings: state => {
+    settings(state) {
       console.log("setting getter");
-      var settings = state.settings;
+      let settings = state.settings;
       if (settings._rev === "") {
         console.log("rev is empty");
-        var result = utools.db.get(settings._id);
+        let result = utools.db.get(settings._id);
         console.log("db result:", result);
         if (result) {
           settings = result;

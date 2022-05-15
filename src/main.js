@@ -5,7 +5,7 @@ import VXETable from "vxe-table";
 import "vxe-table/lib/index.css";
 import ElementUI from "element-ui";
 import "../theme/index.css";
-import store from "./store";
+import store from "./store/index";
 
 Vue.use(VXETable);
 Vue.use(ElementUI);

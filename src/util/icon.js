@@ -137,14 +137,14 @@ export default {
     };
   },
   icon(item) {
-    var type = item.kMDItemContentType;
+    let type = item.kMDItemContentType;
     if (type === "public.folder") {
       return this.icons().folder;
     }
-    var icon = this.extendIcons()[type];
+    let icon = this.extendIcons()[type];
     if (icon === undefined) {
-      var name = item.kMDItemFSName;
-      var extension = Tools.getExtension(name);
+      let name = item.kMDItemFSName;
+      let extension = Tools.getExtension(name);
       if (extension !== "") {
         icon = this.icons()[extension] || this.extendIcons()[extension];
         if (icon !== undefined) {

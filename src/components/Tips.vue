@@ -1,25 +1,64 @@
 <template>
   <div>
-    <el-card body-style="{padding: 10px}">
+    <el-card>
       <div
         class="clearfix"
         slot="header"
       >
-        <b>基本操作</b>
+        <b>mdfind 命令</b>
       </div>
+      <p>
+        本插件是基于 <code>mdfind</code> 命令构建。因此，可使用 <code>mdfind</code> 命令提供的 <i>query expression</i>。
+      </p>
+      <p>部分关键字如下，使用：<code class="code-style">关键字 搜索文本</code>。两种关键字可组合使用，用空格隔开。</p>
+      <p>
+        Spotlight 关键字<br />
+        <small>限制文档类型</small>
+      </p>
       <el-table
-        :data="base"
-        style="width: 100%"
-      >
+        :data="spotlightTableData"
+        stripe
+        border
+        size="small"
+        style="width: 100%">
         <el-table-column
-          label="操作"
-          prop="name"
-        ></el-table-column>
+          prop="desc"
+          width="80"
+          label="类型">
+        </el-table-column>
         <el-table-column
-          label="说明"
-          prop="description"
-        ></el-table-column>
+          prop="keyword"
+          label="关键字">
+        </el-table-column>
       </el-table>
+
+      <p>
+        日期关键字<br />
+        <small>限制文件时间</small>
+      </p>
+      <el-table
+        :data="dateTableData"
+        stripe
+        border
+        size="small"
+        style="width: 100%">
+        <el-table-column
+          prop="desc"
+          width="80"
+          label="时间">
+        </el-table-column>
+        <el-table-column
+          prop="keyword"
+          label="关键字">
+        </el-table-column>
+      </el-table>
+
+      <p>
+        更多其它用法参考:
+        <a href="" @click="openUrl('https://ss64.com/osx/mdfind.html')">
+          https://ss64.com/osx/mdfind.html
+        </a>
+      </p>
     </el-card>
     <el-card body-style="{padding: 10px}">
       <div
@@ -28,10 +67,12 @@
       >
         <b>快捷搜索</b>
       </div>
-      <p>快捷搜索即对结果类型进行简单过滤, 使用方法为在搜索时加上前缀: 'key:搜索文本'</p>
+      <p>快捷搜索即对结果类型进行简单过滤, 使用方法为在搜索时加上前缀: <code class="code-style">key:搜索文本</code>。</p>
       <p>
-        详细使用见插件主页:
-        <a href="https://yuanliao.info/d/595/13">https://yuanliao.info/d/595/13</a>
+        详细使用见 Mverything 插件主页:
+        <a href="" @click="openUrl('https://yuanliao.info/d/595/13')">
+          https://yuanliao.info/d/595/13
+        </a>
       </p>
     </el-card>
   </div>
@@ -39,49 +80,76 @@
 
 <script>
 export default {
+  name: "Tips",
   data() {
     return {
-      base: [
+      spotlightTableData: [
         {
-          name: 'Enter (回车)',
-          description: '搜索'
+          desc: "音频/音乐",
+          keyword: "kind:audio, kind:music"
         },
         {
-          name: 'Space (空格)',
-          description: '预览'
+          desc: "文件夹",
+          keyword: "kind:folder, kind:folders"
         },
         {
-          name: 'Esc',
-          description: '退出当前状态'
+          desc: "字体",
+          keyword: "kind:font, kind:fonts"
+
         },
         {
-          name: 'delete',
-          description: '删除当前文件'
+          desc: "图片",
+          keyword: "kind:image, kind:images"
         },
         {
-          name: 'c (键盘C键)',
-          description: '复制文件'
+          desc: "视频",
+          keyword: "kind:movie, kind:movies"
         },
         {
-          name: '→ (右方向键)',
-          description: '默认方式打开'
+          desc: "PDF",
+          keyword: "kind: pdf, kind:pdfs"
+        }
+      ],
+      dateTableData: [
+        {
+          desc: "今天",
+          keyword: "date:today"
         },
         {
-          name: '鼠标双击',
-          description: '默认方式打开'
+          desc: "昨天",
+          keyword: "date:yesterday"
         },
         {
-          name: '鼠标右键',
-          description: '快捷菜单'
+          desc: "明天",
+          keyword: "date:tomorrow"
+        },
+        {
+          desc: "这周",
+          keyword: "date:this week"
+        },
+        {
+          desc: "下周",
+          keyword: "date:next week"
         }
       ]
+    };
+  },
+  methods: {
+    openUrl(url) {
+      utools.shellOpenExternal(url);
     }
   }
-}
+};
 </script>
 
 <style scoped>
 .el-card {
   margin: 10px;
+}
+
+.code-style {
+  background: #F3F4F5;
+  padding: 4px;
+  border-radius: 3px;
 }
 </style>

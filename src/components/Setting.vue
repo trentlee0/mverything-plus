@@ -9,7 +9,6 @@
       </div>
       <el-form
         class="setting-form"
-        label-position="top"
         ref="settingForm"
       >
         <el-form-item label="是否搜索文件内容">
@@ -18,7 +17,7 @@
         <el-form-item label="搜索范围">
           <el-select v-model="settings.data.searchRoot">
             <el-option
-              label="~/ (用户目录)"
+              label="~ (家目录)"
               value="user"
             ></el-option>
             <el-option
@@ -27,8 +26,16 @@
             ></el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="是否使用原生预览 (暂不可用)">
-          <el-switch disabled v-model="settings.data.preview.native"></el-switch>
+        <el-form-item label="是否自动搜索">
+          <el-switch v-model="settings.data.isAutoSearch"></el-switch>
+        </el-form-item>
+        <el-form-item label="是否展示全部文件">
+          <el-tooltip class="item" effect="dark" content="仅在'在此文件夹中搜索'中生效" placement="right">
+            <div style="float: right; cursor: default;">
+              *
+            </div>
+          </el-tooltip>
+          <el-switch v-model="settings.data.isShowTempDirAllFiles"></el-switch>
         </el-form-item>
       </el-form>
     </el-card>
@@ -42,7 +49,9 @@
           @click="addKeySearch"
           style="float: right; padding: 3px 0"
           type="text"
-        >添加</el-button>
+        >
+          添加
+        </el-button>
       </div>
       <el-table
         :data="settings.data.keyList"
@@ -76,7 +85,9 @@
               @click="removeKeySearch(scope.row)"
               size="small"
               type="text"
-            >删除</el-button>
+            >
+              删除
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -139,98 +150,97 @@
 </template>
 
 <script>
-import { mapGetters } from 'vuex'
-import Tools from '../tools'
+import { mapGetters } from "vuex";
+import Tools from "../util/tools";
 
 export default {
+  name: "Setting",
   computed: mapGetters({
-    settings: 'settings'
+    settings: "settings"
   }),
   mounted() {
-    console.log(this.settings)
   },
   methods: {
     save() {
       // 判断设置中的_rev是否为空
-      if (this.settings._rev === '') {
+      if (this.settings._rev === "") {
         // 新增配置到数据库
-        var result = utools.db.put({
+        let result = utools.db.put({
           _id: this.settings._id,
           data: this.settings.data
-        })
-        console.log('create db result:', result)
+        });
         if (result.error) {
-          return false
+          return false;
         }
         // 更新_rev
-        this.$store.commit('updateSettingsRev', result.rev)
+        this.$store.commit("updateSettingsRev", result.rev);
       } else {
         // 更新数据库中的配置
-        var result = utools.db.put(this.settings)
-        console.log('update db result:', result)
+        let result = utools.db.put(this.settings);
         if (result.error) {
-          return false
+          return false;
         }
         // 更新_rev
-        this.$store.commit('updateSettingsRev', result.rev)
+        this.$store.commit("updateSettingsRev", result.rev);
       }
-      return true
+      return true;
     },
     addKeySearch() {
-      var keyList = this.settings.data.keyList
-      this.$prompt('规则格式: 关键词&正则表达式', '添加快捷搜索规则', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+      let keyList = this.settings.data.keyList;
+      this.$prompt("规则格式: <code>关键词&正则表达式</code>", "添加快捷搜索规则", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
         inputPattern: /.+&.+/,
-        inputErrorMessage: '规则格式不正确'
+        inputErrorMessage: "规则格式不正确",
+        dangerouslyUseHTMLString: true
       }).then(({ value }) => {
-        var separatorIndex = value.indexOf('&')
-        var key = value.substring(0, separatorIndex)
-        var regex = value.substring(separatorIndex + 1)
-        var keySearch = {
+        let separatorIndex = value.indexOf("&");
+        let key = value.substring(0, separatorIndex);
+        let regex = value.substring(separatorIndex + 1);
+        let keySearch = {
           key: key,
           regex: regex
-        }
-        var index = Tools.findIndexInList(keyList, keySearch.key, 'key')
+        };
+        let index = Tools.findIndexInList(keyList, keySearch.key, "key");
         if (index > -1) {
           this.$confirm(
-            '发现重复的关键词: ' + keySearch.key + ' , 是否要覆盖 ?',
-            '注意',
+            "发现重复的关键词: " + keySearch.key + " , 是否要覆盖 ?",
+            "注意",
             {
-              confirmButtonText: '确定',
-              cancelButtonText: '取消',
-              type: 'warning'
+              confirmButtonText: "确定",
+              cancelButtonText: "取消",
+              type: "warning"
             }
-          ).then(() => keyList.splice(index, 1))
+          ).then(() => keyList.splice(index, 1));
         }
-        keyList.push(keySearch)
-        this.$store.commit('updateSettingsKeyList', keyList)
+        keyList.push(keySearch);
+        this.$store.commit("updateSettingsKeyList", keyList);
         this.$message({
-          type: 'success',
-          message: '添加成功!'
-        })
-      })
+          type: "success",
+          message: "添加成功!"
+        });
+      });
     },
     removeKeySearch(row) {
-      var keyList = this.settings.data.keyList
-      this.$confirm('确认删除快捷搜索: ' + row.key, '不可恢复', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
+      let keyList = this.settings.data.keyList;
+      this.$confirm("确认删除快捷搜索: " + row.key, "不可恢复", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
       }).then(() => {
-        var index = Tools.findIndexInList(keyList, row.key, 'key')
+        let index = Tools.findIndexInList(keyList, row.key, "key");
         if (index > -1) {
-          keyList.splice(index, 1)
+          keyList.splice(index, 1);
         }
-        this.$store.commit('updateSettingsKeyList', keyList)
+        this.$store.commit("updateSettingsKeyList", keyList);
         this.$message({
-          type: 'success',
-          message: '删除成功!'
-        })
-      })
+          type: "success",
+          message: "删除成功!"
+        });
+      });
     }
   }
-}
+};
 </script>
 
 <style scoped>

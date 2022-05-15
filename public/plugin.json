@@ -1,16 +1,18 @@
 {
-  "pluginName": "Mverything",
-  "author": "lanyuanxiaoyao",
-  "homepage": "http://lanyuanxiaoyao.com",
-  "description": "Mac 上的 Everything",
-  "version": "0.1.6",
+  "pluginName": "Mverything Plus",
+  "author": "Trent0",
+  "homepage": "https://github.com/trentlee0/mverything-plus",
+  "description": "查找文件，Mac 上的 Everything",
+  "version": "1.0.0",
   "logo": "logo.png",
   "main": "index.html",
   "preload": "preload.js",
   "platform": ["darwin"],
+  "development": {
+    "main": "http://127.0.0.1:8080"
+  },
   "pluginSetting": {
-    "single": true,
-    "height": 590
+    "single": true
   },
   "features": [{
     "code": "find",
@@ -29,8 +31,15 @@
         "type": "window",
         "label": "在此文件夹中搜索",
         "match": {
-          "bundleId": "com.apple.finder"
+          "app": "Finder.app"
         }
+      },
+      {
+        "type": "over",
+        "label": "搜索",
+        "exclude": "/[\\\\\\/\\t\\n]/",
+        "minLength": 1,
+        "maxLength": 100
       }
     ]
   }]
