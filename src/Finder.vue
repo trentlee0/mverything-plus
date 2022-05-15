@@ -24,10 +24,10 @@
           >
             <vxe-table-column
               field="kMDItemContentType"
-              width="40"
+              width="50"
             >
               <template v-slot="{ row }">
-                <img :src="row.icon" class="icon" />
+                <img :src="settings.data.isUseSystemFileIcon ? getFileIcon(row.path) : row.icon" class="icon" />
               </template>
             </vxe-table-column>
             <vxe-table-column
@@ -209,11 +209,13 @@
           </el-col>
 
           <el-col :span="4">
-            预览文件
-            <el-switch
-              v-model="enablePreview"
-            >
-            </el-switch>
+            <div v-show="settings.data.isShowDetailPage">
+              预览文件
+              <el-switch
+                v-model="enablePreview"
+              >
+              </el-switch>
+            </div>
           </el-col>
 
           <el-col :span="4">
@@ -370,7 +372,7 @@ export default {
       settings: "settings"
     }),
     hasDetail() {
-      return Object.entries(this.item).length !== 0;
+      return this.settings.data.isShowDetailPage && Object.entries(this.item).length !== 0;
     }
   },
   mounted() {
@@ -427,6 +429,9 @@ export default {
     document.removeEventListener("click", this.clickEvent);
   },
   methods: {
+    getFileIcon(path) {
+      return utools.getFileIcon(path);
+    },
     initial(code, type, payload) {
       // 初始化找到用户目录
       this.homeDir = utools.getPath("home");
@@ -595,7 +600,7 @@ export default {
           this.search(this.query);
         }
       }
-      // Command + F
+      // ⌘ F
       else if (keyCode === 70 && event.metaKey) {
         utools.subInputFocus();
       }
@@ -661,6 +666,8 @@ export default {
           duration: 1500
         });
         done();
+        // 重新加载数据
+        this.$refs.xTable.loadData(this.tableData);
       } else {
         this.$message.error("配置保存失败");
       }
@@ -711,9 +718,7 @@ export default {
       }
 
       if (!this.item.preview) {
-        window.generatePreviewPicture(this.item.name, this.item.path, path => {
-          this.item.thumbnails = path;
-        });
+        this.item.thumbnails = this.getFileIcon(this.item.path);
       }
     },
     numberFix(number, fixed) {

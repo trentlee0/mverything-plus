@@ -53,6 +53,8 @@ export default {
       settings["data"]["databaseVersion"] = 4;
       settings["data"]["isAutoSearch"] = true;
       settings["data"]["isShowTempDirAllFiles"] = true;
+      settings["data"]["isUseSystemFileIcon"] = true;
+      settings["data"]["isShowDetailPage"] = true;
     }
     console.log("database update finish:", settings);
     return settings;

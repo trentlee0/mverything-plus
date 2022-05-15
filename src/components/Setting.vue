@@ -27,6 +27,11 @@
           </el-select>
         </el-form-item>
         <el-form-item label="是否自动搜索">
+          <el-tooltip class="item" effect="dark" content="开启后，将在输入文本 0.5 秒后自动搜索" placement="right">
+            <div style="float: right; cursor: default;">
+              *
+            </div>
+          </el-tooltip>
           <el-switch v-model="settings.data.isAutoSearch"></el-switch>
         </el-form-item>
         <el-form-item label="是否展示全部文件">
@@ -36,6 +41,12 @@
             </div>
           </el-tooltip>
           <el-switch v-model="settings.data.isShowTempDirAllFiles"></el-switch>
+        </el-form-item>
+        <el-form-item label="是否显示文件详情页面">
+          <el-switch v-model="settings.data.isShowDetailPage"></el-switch>
+        </el-form-item>
+        <el-form-item label="是否使用系统文件图标">
+          <el-switch v-model="settings.data.isUseSystemFileIcon"></el-switch>
         </el-form-item>
       </el-form>
     </el-card>
