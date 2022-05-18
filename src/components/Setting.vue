@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="container">
     <el-card body-style="{padding: 5px}">
       <div
         class="clearfix"
@@ -40,10 +40,7 @@
               *
             </div>
           </el-tooltip>
-          <el-switch v-model="settings.data.isShowTempDirAllFiles"></el-switch>
-        </el-form-item>
-        <el-form-item label="是否显示文件详情页面">
-          <el-switch v-model="settings.data.isShowDetailPage"></el-switch>
+          <el-switch v-model="settings.data.isShowFilesInTempDir"></el-switch>
         </el-form-item>
         <el-form-item label="是否使用系统文件图标">
           <el-switch v-model="settings.data.isUseSystemFileIcon"></el-switch>
@@ -166,9 +163,11 @@ import Tools from "../util/tools";
 
 export default {
   name: "Setting",
-  computed: mapGetters({
-    settings: "settings"
-  }),
+  computed: {
+    ...mapGetters({
+      settings: "settings"
+    })
+  },
   mounted() {
   },
   methods: {
@@ -255,7 +254,11 @@ export default {
 </script>
 
 <style scoped>
-.el-card {
+#container .el-card {
   margin: 10px;
+}
+
+.setting-form {
+  padding-left: 20px;
 }
 </style>

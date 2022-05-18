@@ -270,7 +270,7 @@ var r=n(20),i=n(21),o=n(8);function s(){return u.TYPED_ARRAY_SUPPORT?2147483647:
     });
   }
 
-  window.deleteFile = path => shell.moveItemToTrash(path);
+  window.deleteFile = path => shell.trashItem(path);
 
   const fs = require('fs')
 

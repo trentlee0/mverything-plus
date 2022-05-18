@@ -1,27 +1,37 @@
 <template>
-  <div>
-    <div id="finder" style="position: absolute;height: 100%; width: 100%; background: #fafbfc">
-      <div style="height: calc(100% - 40px); overflow: hidden;">
-        <div style="float: left; height: 100%;" :style="{width: hasDetail ? '55%' : '100%'}">
+  <div id="page">
+    <div id="finder">
+      <div id="finder-main">
+        <div
+          id="main-list"
+          :style="{width: listWidth}"
+          v-loading="loading"
+        >
           <vxe-table
+            class="list-table"
             :context-menu="{body: {options: menus}}"
             :keyboard-config="{isArrow: true}"
-            :loading="loading"
-            :optimization="{scrollY: {gt: 1000, oSize: 10, rSize: 100}}"
             :show-header="false"
             height="100%"
+            auto-resize
             @cell-context-menu="cellClickEvent"
             @cell-dblclick="cellDClickEvent"
             @context-menu-click="menuClickEvent"
             @current-change="currentChangeEvent"
             highlight-current-row
-            highlight-hover-row
+            @cell-mouseenter="mouseEnterTableEvent"
+            row-class-name="row-color"
             ref="xTable"
-            style="background: #fafbfc"
-            :row-config="{height: 120}"
-            show-overflow="title"
+            :row-config="{height: rowHeight}"
+            empty-text=""
+            show-overflow
             tabindex="0"
           >
+            <template #empty>
+              <div style="display: flex; justify-content: center; align-items: center;">
+                <el-empty :image="emptyImage" description=" "></el-empty>
+              </div>
+            </template>
             <vxe-table-column
               field="kMDItemContentType"
               width="50"
@@ -32,134 +42,53 @@
             </vxe-table-column>
             <vxe-table-column
               field="path"
+              type="html"
             >
               <template v-slot="{ row }">
-                <span class="name" style="font-size: medium; line-height: 25px;">{{ row.name }}</span> <br />
-                <span class="path" style="font-size: small;">{{ row.path }}</span>
+                <div>
+                  <el-row
+                    type="flex"
+                    align="center"
+                    style="padding: 5px 0; user-select: none;"
+                    :style="{height: rowHeight + 'px'}"
+                  >
+                    <el-col
+                      :span="listFileNamePathItemWidth"
+                      style="text-align: left;"
+                    >
+                      <div class="name">{{ row.name }}</div>
+                      <div class="path">
+                        {{ row.path }}
+                      </div>
+                    </el-col>
+                    <el-col
+                      :span="listFileDateSizeItemWidth"
+                      style="text-align: right;"
+                      v-show="isListMode"
+                    >
+                      <!--                      <div v-show="row.viewNum !== undefined">-->
+                      <!--                        ⌘ {{ row.viewNum }}-->
+                      <!--                      </div>-->
+                      <div style="font-size: medium;">
+                        {{ formatDatetime(row.updateDate) }}
+                      </div>
+                      <div style="font-size: small; margin-top: 5px;">
+                        {{ handleByteSize(row.size) }}
+                      </div>
+                    </el-col>
+                  </el-row>
+                </div>
               </template>
             </vxe-table-column>
           </vxe-table>
         </div>
 
         <div
-          id="detail"
-          style="float:left; height: 100%; overflow: auto;"
-          :style="{width: hasDetail ? '45%' : '0%'}"
+          id="main-detail"
+          :style="{width: detailWidth}"
+          v-if="isPreviewMode"
         >
-          <div v-if="hasDetail">
-            <el-card v-if="enablePreview">
-              <el-table
-                :data="item.files"
-                :max-height="400"
-                @row-dblclick="detailFolderTableDbClickEvent"
-                empty-text="文件夹为空"
-                size="mini"
-                stripe
-                v-if="item.preview === 'folder'"
-              >
-                <el-table-column
-                  label="文件夹内容 (双击打开)"
-                  prop="name"
-                ></el-table-column>
-              </el-table>
-              <div
-                style="text-align: center"
-                v-else-if="item.preview === 'picture'"
-              >
-                <el-image
-                  :src="item.path"
-                  style="max-width: 100%"
-                ></el-image>
-              </div>
-              <div v-else-if="item.preview === 'text'">
-                <div style="padding: 0 5px; overflow: auto; background: #f5f5f5;">
-                  <pre><code>{{ item.text }}</code></pre>
-                </div>
-              </div>
-              <div v-else-if="item.preview === 'video'">
-                <video
-                  :src="item.path"
-                  controls
-                  muted
-                  ref="videoPlayer"
-                  style="width: 100%"
-                />
-              </div>
-              <div v-else-if="item.preview === 'audio'">
-                <audio
-                  :src="item.path"
-                  controls
-                  ref="audioPlayer"
-                  style="width: 100%"
-                />
-              </div>
-              <div
-                style="text-align: center"
-                v-else
-              >
-                <el-image
-                  :src="item.thumbnails"
-                  style="max-width: 100%;margin-bottom: 5px"
-                  v-if="item.thumbnails !== ''"
-                ></el-image>
-                <span v-else>暂无预览</span>
-              </div>
-            </el-card>
-            <el-card body-style="{padding: 5px}">
-              <el-form
-                :show-message="false"
-                label-position="left"
-                label-width="70px"
-                size="mini"
-              >
-                <el-form-item label="文件名">
-                  <div class="wrap" style="font-size: large; font-weight: bold;">
-                    {{ item.name }}
-                    <CopyButton :text="item.name">复制</CopyButton>
-                  </div>
-                </el-form-item>
-                <el-form-item label="路径">
-                  <div class="wrap">
-                    {{ item.path }}
-                    <CopyButton :text="item.path">复制</CopyButton>
-                  </div>
-                </el-form-item>
-                <el-form-item
-                  label="大小"
-                  v-show="item.size"
-                >
-                  <span v-if="item.size > 1000000000">{{ numberFix(item.size / 1000000000, 2) }} GB</span>
-                  <span v-else-if="item.size > 1000000">{{ numberFix(item.size / 1000000, 2) }} MB</span>
-                  <span v-else-if="item.size > 1000">{{ numberFix(item.size / 1000, 2) }} KB</span>
-                  <span v-else-if="item.size > 0">{{ item.size }} B</span>
-                  <span v-else>无</span>
-                </el-form-item>
-                <el-form-item
-                  label="子文件数"
-                  v-show="item.count"
-                >{{ item.count }}
-                </el-form-item>
-                <el-form-item label="类型">
-                  <div :title="item.type">{{ item.kind }}</div>
-                </el-form-item>
-                <el-form-item label="创建时间">
-                  <div>{{ formatDatetime(item.createDate) }}</div>
-                </el-form-item>
-                <el-form-item label="更新时间">
-                  <div>{{ formatDatetime(item.updateDate) }}</div>
-                </el-form-item>
-                <el-form-item label="使用时间" v-if="item.usedDate">
-                  <div>{{ formatDatetime(item.usedDate) }}</div>
-                </el-form-item>
-              </el-form>
-            </el-card>
-          </div>
-          <div
-            v-else
-            style="display: flex; height: 100%; justify-content: center; align-items: center;"
-          >
-            <div>暂无预览</div>
-          </div>
+          <Detail :item="item" :is-show-preview="enablePreviewContent"></Detail>
         </div>
       </div>
 
@@ -184,55 +113,104 @@
               @click="tipDrawer.open = true"
               class="tip-button"
               ref="tipButton"
-              title="提示"
+              title="帮助"
             >
-              <i class="el-icon-info"></i>
+              <i class="el-icon-question"></i>
             </div>
           </el-col>
 
-          <el-col :span="12">
+          <el-col :span="7">
             <div class="sort-button" style="margin-right: 15px;">
-              <i v-show="sort.type === -1" title="升序" class="el-icon-arrow-up" @click="handleSortChange"></i>
-              <i v-show="sort.type === 1" title="降序" class="el-icon-arrow-down" @click="handleSortChange"></i>
+              <i v-show="sort.type === -1" title="升序" class="el-icon-caret-top" @click="handleSortChange"></i>
+              <i v-show="sort.type === 1" title="降序" class="el-icon-caret-bottom" @click="handleSortChange"></i>
             </div>
-            <el-radio-group
-              @change="sortChangeEvent"
-              class="radio-group"
-              size="mini"
-              v-model="sort.field"
-            >
-              <el-radio-button label="name">名称</el-radio-button>
-              <el-radio-button label="size">大小</el-radio-button>
-              <el-radio-button label="createDate">创建时间</el-radio-button>
-              <el-radio-button label="updateDate">更新时间</el-radio-button>
-            </el-radio-group>
+            <el-dropdown @command="sortChangeEvent" style="cursor: pointer;">
+              <span style="user-select: none;" v-text="sortCommands[sort.field]"></span>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item
+                  v-for="(title, command) in sortCommands"
+                  :key="command"
+                  :command="command"
+                >
+                  {{ title }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
           </el-col>
 
-          <el-col :span="4">
-            <div v-show="settings.data.isShowDetailPage">
-              预览文件
+          <el-col :span="5" style="display: flex;justify-content: center;">
+            <DisplayItemGroup
+              :items="displayItems"
+              :selected-index="displayItemIndex"
+              @itemChange="displayItemChangeEvent"
+            ></DisplayItemGroup>
+          </el-col>
+
+          <el-col :span="3">
+            <div v-show="isPreviewMode" style="user-select: none;">
+              预览内容
               <el-switch
-                v-model="enablePreview"
+                v-model="enablePreviewContent"
               >
               </el-switch>
             </div>
           </el-col>
 
-          <el-col :span="4">
+          <el-col :span="5" style="display: flex; justify-content: center;">
             <div id="total">共搜索到 {{ tableData.length }} 条</div>
           </el-col>
         </el-row>
       </div>
     </div>
 
+    <el-dialog
+      :visible.sync="deleteDialog.show"
+      @close="deleteDialogCloseEvent"
+      @open="deleteDialogOpenEvent"
+      title="提示"
+      width="300px"
+    >
+      <span>是否将文件移到废纸篓?</span>
+      <span
+        class="dialog-footer"
+        slot="footer"
+      >
+        <el-button
+          @click="deleteDialog.show = false"
+          size="mini"
+        >
+          取 消
+        </el-button>
+        <el-button
+          @click="deleteFile(deleteDialog.file)"
+          size="mini"
+          type="primary"
+        >
+          确 定
+        </el-button>
+      </span>
+    </el-dialog>
+
+    <!-- 预览界面 -->
+    <el-drawer
+      class="drawer"
+      :direction="detailDrawer.direction"
+      :show-close="false"
+      :size="'52%'"
+      :visible.sync="detailDrawer.open"
+      :with-header="false"
+    >
+      <Detail :item="item"></Detail>
+    </el-drawer>
+
     <!-- 设置界面 -->
     <el-drawer
+      class="drawer"
       :before-close="settingDrawerCloseEvent"
       :direction="settingDrawer.direction"
       :show-close="false"
       :size="'370px'"
       :visible.sync="settingDrawer.open"
-      style="height: 100%; width: 100%;"
     >
       <div
         class="clearfix"
@@ -243,19 +221,19 @@
       <Settings ref="settings" />
     </el-drawer>
 
-    <!-- 提示界面 -->
+    <!-- 帮助界面 -->
     <el-drawer
+      class="drawer"
       :direction="tipDrawer.direction"
       :show-close="false"
       :size="'360px'"
       :visible.sync="tipDrawer.open"
-      style="height: 100%; width: 100%;"
     >
       <div
         class="clearfix"
         slot="title"
       >
-        <span class="drawer-header">提示 Tips</span>
+        <span class="drawer-header">帮助 Help</span>
       </div>
       <Tips />
     </el-drawer>
@@ -272,23 +250,25 @@ import { mapGetters } from "vuex";
 
 import Tips from "./components/Tips";
 import Settings from "./components/Setting";
-import Detail from "./components/Detail";
-import dayjs from "dayjs";
 import CopyButton from "@/components/CopyButton";
+import DisplayItemGroup from "@/components/DisplayItemGroup";
+import Detail from "@/components/Detail";
+
+import emptyImage from "@/assets/empty_inbox.svg";
 
 export default {
   name: "Finder",
   components: {
+    Detail,
+    DisplayItemGroup,
     CopyButton,
     Settings,
-    Tips,
-    Detail
+    Tips
   },
   data() {
     return {
-      isCopyShow: true,
       tableData: [],
-      tableHeight: 550,
+      rowHeight: 48,
       loading: false,
       query: "",
       settingDrawer: {
@@ -299,38 +279,14 @@ export default {
         open: false,
         direction: "ltr"
       },
+      detailDrawer: {
+        open: false,
+        direction: "rtl"
+      },
       item: {},
-      codeMirrorOption: {
-        lineNumbers: true,
-        lineWrapping: true,
-        dragDrop: false,
-        readOnly: "nocursor"
-      },
-      viewer: {
-        images: []
-      },
-      viewerOptions: {
-        inline: false,
-        button: true,
-        navbar: false,
-        title: true,
-        toolbar: true,
-        tooltip: false,
-        movable: false,
-        zoomable: true,
-        rotatable: true,
-        scalable: true,
-        transition: false,
-        fullscreen: false,
-        keyboard: false
-      },
       tempDir: "",
       homeDir: "/",
       rootDir: "/",
-      preview: {
-        status: false,
-        start: 0
-      },
       sort: {
         field: "updateDate",
         type: 1
@@ -338,12 +294,18 @@ export default {
       menus: [
         [
           {
+            code: "detail",
+            name: "显示详情"
+          }
+        ],
+        [
+          {
             code: "open",
             name: "打开"
           },
           {
             code: "openInFinder",
-            name: "在 Finder 中显示"
+            name: "在访达中显示"
           }
         ],
         [
@@ -359,30 +321,81 @@ export default {
             code: "copyFilePath",
             name: "复制文件路径"
           }
+        ],
+        [
+          {
+            code: "delete",
+            name: "删除"
+          }
         ]
       ],
       keyboardEvent: {
         enter: true
       },
-      enablePreview: false
+      deleteDialog: {
+        show: false,
+        file: null
+      },
+      enablePreviewContent: false,
+      isMouseMove: false,
+      mouseMoveTimer: null,
+      sortCommands: {
+        name: "名称",
+        size: "大小",
+        createDate: "创建时间",
+        updateDate: "更新时间"
+      },
+      displayItems: [
+        { code: "list", title: "列表模式", icon: "formatListBulleted" },
+        { code: "preview", title: "预览模式", icon: "viewWeekOutline" }
+      ],
+      displayItemIndex: 0,
+      detailDrawerTimer: null,
+      isOverEnter: false
     };
   },
   computed: {
     ...mapGetters({
       settings: "settings"
     }),
-    hasDetail() {
-      return this.settings.data.isShowDetailPage && Object.entries(this.item).length !== 0;
+    isNotEmptyDetail() {
+      return this.isPreviewMode && Object.entries(this.item).length !== 0;
+    },
+    isPreviewMode() {
+      return this.displayItems[this.displayItemIndex].code === "preview";
+    },
+    isListMode() {
+      return this.displayItems[this.displayItemIndex].code === "list";
+    },
+    listWidth() {
+      return this.isNotEmptyDetail ? "55%" : "100%";
+    },
+    computedRowHeight() {
+      return this.rowHeight + 1;
+    },
+    detailWidth() {
+      return this.isNotEmptyDetail ? "45%" : "0%";
+    },
+    listFileNamePathItemWidth() {
+      return this.isNotEmptyDetail ? 24 : 19;
+    },
+    listFileDateSizeItemWidth() {
+      return this.isNotEmptyDetail ? 0 : 5;
+    },
+    emptyImage() {
+      return emptyImage;
     }
   },
   mounted() {
     this.tableData = [];
-    this.$refs.xTable.loadData(this.tableData);
+    this.reloadTableData();
     let tempPath = utools.getPath("temp");
     window.initTempPath(tempPath);
 
-    const preview = utools.dbStorage.getItem("enablePreview");
-    this.enablePreview = preview === null ? false : preview;
+    const preview = utools.dbStorage.getItem("enablePreviewContent");
+    this.enablePreviewContent = preview === null ? true : preview;
+    const displayIndex = utools.dbStorage.getItem("displayItemIndex");
+    this.displayItemIndex = displayIndex === null ? 1 : displayIndex;
 
     let newSettings = Tools.databaseUpdate(this.settings);
     this.$store.commit("updateSettings", newSettings);
@@ -391,12 +404,14 @@ export default {
       this.initial(code, type, payload).then(() => {
         let timer = null;
         utools.setSubInput(({ text }) => {
+          // 去除右边空格后，与之前查询相同不处理
+          if (this.trimRight(text) === this.query && this.tableData.length) return;
           // 把输入更新到变量中
           this.query = text;
-          // 当在文件夹中搜索时，显示全部文件
-          if (this.tempDir !== "" && this.settings.data.isShowTempDirAllFiles) {
+          // 搜索内容为空，当在文件夹中搜索时，显示全部文件
+          if (this.tempDir !== "" && this.settings.data.isShowFilesInTempDir) {
             clearTimeout(timer);
-            if (!text) {
+            if (!this.query) {
               this.searchAll();
               return;
             }
@@ -410,27 +425,57 @@ export default {
           }
         }, "搜索");
 
+        // 进入在文件夹中搜索，显示全部文件
+        if (this.tempDir !== "" && this.settings.data.isShowFilesInTempDir) {
+          clearTimeout(timer);
+          this.searchAll();
+        }
+
         // 把上次搜索的关键字设置到输入框中
-        utools.setSubInputValue(this.query);
+        if (this.tempDir === "") {
+          utools.setSubInputValue(this.query);
+        }
       });
     });
     utools.onPluginOut(() => {
       this.tempDir = "";
       this.reset();
+      this.detailDrawer.open = false;
       window.killMdfind();
     });
     // 绑定键盘事件
     document.addEventListener("keydown", this.keyDownEvent);
-    document.addEventListener("click", this.clickEvent);
+    document.addEventListener("mousemove", this.mouseMoveEvent);
   },
   destroyed() {
     // 解绑键盘事件
     document.removeEventListener("keydown", this.keyDownEvent);
-    document.removeEventListener("click", this.clickEvent);
+    document.removeEventListener("mousemove", this.mouseMoveEvent);
   },
   methods: {
-    getFileIcon(path) {
-      return utools.getFileIcon(path);
+    // 切换显示模式
+    mouseMoveEvent() {
+      clearTimeout(this.mouseMoveTimer);
+      this.isMouseMove = true;
+      this.mouseMoveTimer = setTimeout(() => {
+        this.isMouseMove = false;
+      }, 100);
+    },
+    mouseEnterTableEvent(e) {
+      // 预览模式不处理
+      if (this.isPreviewMode) return;
+      // 只有鼠标在移动才触发高亮
+      if (this.isMouseMove) {
+        this.currentChangeEvent(e);
+      }
+    },
+    displayItemChangeEvent({ item, index }) {
+      this.displayItemIndex = index;
+      this.reloadTableData();
+      // 当前在预览模式，加载文件内容
+      if (this.isListMode) {
+        this.loadFileContent();
+      }
     },
     initial(code, type, payload) {
       // 初始化找到用户目录
@@ -441,11 +486,7 @@ export default {
           if (type === "files") {
             this.$notify({
               title: "当前搜索路径",
-              message: h(
-                "code",
-                { style: "word-break: break-all" },
-                payload[0].path
-              ),
+              message: h("code", { style: "word-break: break-all" }, payload[0].path),
               duration: 3000
             });
             this.tempDir = payload[0].path;
@@ -473,6 +514,7 @@ export default {
             });
           } else if (type === "over") {
             this.query = payload;
+            this.isOverEnter = true;
             resolve();
           } else {
             resolve();
@@ -487,10 +529,13 @@ export default {
     reset() {
       // 清空结果表格
       this.tableData = [];
-      this.$refs.xTable.loadData(this.tableData);
+      this.reloadTableData();
       this.item = {};
       // 关闭加载进度条
       this.loading = false;
+    },
+    trimRight(str) {
+      return str.replace(/(\s*$)/g, "");
     },
     searchAll() {
       this.search("* = *");
@@ -562,15 +607,25 @@ export default {
           );
 
           // 加载搜索结果
-          this.$refs.xTable.loadData(this.tableData);
-          // 设置第一条结果的高亮
-          this.$refs.xTable.setCurrentRow(this.tableData[0]);
-          // 滚动到表格顶部
-          this.$refs.xTable.scrollTo(this.tableData[0]);
+          this.reloadTableData();
         }
         // 结束加载中进度条
         this.loading = false;
       });
+    },
+    deleteFile(file) {
+      window.deleteFile(file.path).then(() => {
+        this.$refs.xTable.remove(file);
+        this.deleteDialog.show = false;
+        this.$message.success("删除成功");
+      });
+    },
+    showDeleteDialog() {
+      this.deleteDialog.file = this.$refs.xTable.getCurrentRow();
+      if (this.tableData.length === 0 || this.deleteDialog.file === null) {
+        return;
+      }
+      this.deleteDialog.show = true;
     },
     copyTextToClipBoard(text) {
       utools.copyText(text);
@@ -583,16 +638,12 @@ export default {
         utools.copyFile(path);
       }
     },
-    clickEvent(event) {
-      if (this.settingDrawer.open || this.tipDrawer.open) return;
-      utools.subInputFocus();
-    },
     // 键盘事件
     keyDownEvent(event) {
       // 获取当前按下的键
       let keyCode = window.event ? event.keyCode : event.which;
       // 回车
-      if (keyCode === 13) {
+      if (keyCode === 13 && !event.metaKey) {
         if (this.keyboardEvent.enter) {
           // 开启加载中进度条
           this.loading = true;
@@ -604,6 +655,74 @@ export default {
       else if (keyCode === 70 && event.metaKey) {
         utools.subInputFocus();
       }
+      // ⌘ O
+      else if (keyCode === 79 && event.metaKey) {
+        if (this.item && this.item.path) {
+          utools.shellOpenPath(this.item.path);
+        }
+      }
+      // ⌘ ⏎
+      else if (keyCode === 13 && event.metaKey) {
+        if (this.item && this.item.path) {
+          utools.shellShowItemInFolder(this.item.path);
+        }
+      }
+      // →
+      else if (keyCode === 39) {
+        // 在列表模式才处理
+        if (this.isListMode) {
+          clearTimeout(this.detailDrawerTimer);
+          this.detailDrawerTimer = setTimeout(() => {
+            this.showDetailDrawer();
+          }, 100);
+        }
+      }
+      // ⌘ C
+      else if (keyCode === 67 && event.metaKey && !event.altKey && !event.shiftKey) {
+        const selectionText = document.getSelection().toString();
+        // 如果有选中文本，优先处理复制文本
+        if (selectionText) {
+          this.copyTextToClipBoard(selectionText);
+        } else {
+          if (this.item && this.item.path) {
+            this.copyFileToClipBoard(this.item.path);
+            this.showCopySuccessMsg("文件");
+          }
+        }
+      }
+      // ⇧ ⌘ C
+      else if (keyCode === 67 && event.metaKey && event.shiftKey) {
+        if (this.item && this.item.path) {
+          this.copyTextToClipBoard(this.item.path);
+          this.showCopySuccessMsg("文件路径");
+        }
+      }
+      // ⌥ ⌘ C
+      else if (keyCode === 67 && event.metaKey && event.altKey) {
+        if (this.item && this.item.path) {
+          this.copyTextToClipBoard(this.item.name);
+          this.showCopySuccessMsg("文件名");
+        }
+      }
+      // ⌘ 1 ~ 9
+      else if (49 <= keyCode && keyCode <= 57 && event.metaKey) {
+        this.scrollToRowInTableView(keyCode - 49);
+      }
+      // ⌘ 0
+      else if (keyCode === 48 && event.metaKey) {
+        this.scrollToRowInTableView(9);
+      }
+      // ⌘ T
+      else if (keyCode === 84 && event.metaKey) {
+        this.scrollToTop();
+      }
+      // ESC
+      else if (keyCode === 27) {
+        if (this.settingDrawer.open) this.settingDrawer.open = false;
+        if (this.tipDrawer.open) this.tipDrawer.open = false;
+        if (this.detailDrawer.open) this.detailDrawer.open = false;
+        event.stopPropagation();
+      }
     },
     // 表格快捷菜单点击事件
     menuClickEvent({ menu, row }) {
@@ -611,6 +730,9 @@ export default {
       let path = row.path;
       let name = row.name;
       switch (code) {
+        case "detail":
+          this.showDetailDrawer();
+          break;
         case "open":
           utools.shellOpenPath(path);
           break;
@@ -626,13 +748,38 @@ export default {
         case "copyFileName":
           this.copyTextToClipBoard(name);
           break;
+        case "delete":
+          this.showDeleteDialog();
+          break;
       }
+    },
+    // 滚动到可视窗口指定偏移行
+    scrollToRowInTableView(offset = 0) {
+      const scroller = this.$refs.xTable.getVirtualScroller();
+      const index = Math.floor(scroller.scrollTop / this.computedRowHeight);
+      if (offset === 0) {
+        this.$refs.xTable.scrollTo(0, index * this.computedRowHeight);
+      }
+      if (index + offset < this.tableData.length) {
+        this.$refs.xTable.setCurrentRow(this.tableData[index + offset]);
+      }
+    },
+    deleteDialogOpenEvent() {
+      this.keyboardEvent.enter = false;
+    },
+    deleteDialogCloseEvent() {
+      this.keyboardEvent.enter = true;
     },
     currentChangeEvent({ row }) {
       this.$refs.xTable.setCurrentRow(row);
       this.loadData(row);
+      utools.subInputFocus();
+    },
+    reloadTableData() {
+      this.$refs.xTable.loadData(this.tableData);
     },
     sortChangeEvent(value) {
+      if (value) this.sort.field = value;
       this.loading = true;
       this.tableData = Handler.sort(
         this.tableData,
@@ -640,11 +787,8 @@ export default {
         this.sort.type
       );
       // 加载搜索结果
-      this.$refs.xTable.loadData(this.tableData);
-      // 设置第一条结果的高亮
-      this.$refs.xTable.setCurrentRow(this.tableData[0]);
+      this.reloadTableData();
       // 滚动到表格顶部
-      this.$refs.xTable.scrollTo(this.tableData[0]);
       this.loading = false;
     },
     // 行单击事件
@@ -667,7 +811,7 @@ export default {
         });
         done();
         // 重新加载数据
-        this.$refs.xTable.loadData(this.tableData);
+        this.reloadTableData();
       } else {
         this.$message.error("配置保存失败");
       }
@@ -712,7 +856,8 @@ export default {
         this.item.type === "public.plain-text" ||
         (this.item.preview && this.item.preview === "text")
       ) {
-        if (this.enablePreview) {
+        // 预览模式并且打开'预览内容'，或者列表模式，才加载文件
+        if (this.isPreviewMode && this.enablePreviewContent || this.isListMode) {
           this.loadFileContent();
         }
       }
@@ -721,19 +866,33 @@ export default {
         this.item.thumbnails = this.getFileIcon(this.item.path);
       }
     },
-    numberFix(number, fixed) {
-      return number.toFixed(fixed);
+    showDetailDrawer() {
+      if (this.detailDrawer.open) {
+        this.detailDrawer.open = false;
+        utools.subInputFocus();
+      } else {
+        this.detailDrawer.open = true;
+        utools.subInputBlur();
+      }
     },
     detailFolderTableDbClickEvent(row, column, event) {
       utools.shellOpenPath(this.item.path + "/" + row.name);
     },
     formatDatetime(date) {
-      if (!date) return "";
-      return dayjs(date).format("YYYY-MM-DD HH:mm:ss");
+      return Tools.formatDatetime(date);
     },
     handleSortChange() {
       this.sort.type = -this.sort.type;
       this.sortChangeEvent();
+    },
+    scrollToTop() {
+      // 滚动到表格顶部
+      this.$refs.xTable.scrollTo(0, 0);
+      if (this.tableData.length) {
+        // 设置第一条结果的高亮
+        this.$refs.xTable.setCurrentRow(this.tableData[0]);
+        this.loadData(this.tableData[0]);
+      }
     },
     loadFileContent() {
       if (this.item && this.item.path) {
@@ -743,24 +902,54 @@ export default {
           this.item.text = IconvLite.decode(data, encode);
         });
       }
+    },
+    getFileIcon(path) {
+      return utools.getFileIcon(path);
+    },
+    handleByteSize(size) {
+      return Tools.handleBytesToHuman(size);
+    },
+    showCopySuccessMsg(detail) {
+      this.$message({
+        message: `已复制${detail ? detail : ""}`,
+        type: "success"
+      });
     }
   },
   watch: {
-    tableData(newVal, oldVal) {
+    tableData(newVal) {
       if (newVal.length) {
-        this.$refs.xTable.setCurrentRow(this.tableData[0]);
-        this.loadData(this.tableData[0]);
+        setTimeout(() => {
+          this.scrollToTop();
+        }, 50);
+
+        if (this.isOverEnter) {
+          // 解决横向滚动条问题
+          this.$refs.xTable.recalculate(true);
+          this.isOverEnter = false;
+        }
       } else {
         this.item = {};
       }
     },
-    enablePreview(newVal, oldVal) {
-      if (newVal) {
-        if (this.hasDetail) {
-          this.loadFileContent();
+    enablePreviewContent(newVal) {
+      // 打开预览内容，才加载文件内容
+      if (newVal && this.isPreviewMode) {
+        this.loadFileContent();
+      }
+      utools.dbStorage.setItem("enablePreviewContent", newVal);
+    },
+    displayItemIndex(newVal) {
+      utools.dbStorage.setItem("displayItemIndex", newVal);
+    },
+    isListMode(newVal) {
+      // 控制菜单
+      for (let menu of this.menus) {
+        if (menu[0].code === "detail") {
+          menu[0].visible = newVal;
+          break;
         }
       }
-      utools.dbStorage.setItem("enablePreview", newVal);
     }
   }
 };
@@ -776,6 +965,28 @@ export default {
   height: 0px;
 }
 
+#finder {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  background: #fff;
+}
+
+#finder-main {
+  height: calc(100% - 40px);
+  overflow: hidden;
+}
+
+#main-list {
+  float: left;
+  height: 100%;
+}
+
+#main-detail {
+  float: left;
+  height: 100%;
+}
+
 .icon {
   width: 33px;
   height: 33px;
@@ -786,43 +997,36 @@ export default {
   color: #000000c4;
   cursor: default;
   user-select: none;
+  font-size: 17px;
+  line-height: 20px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .path {
   color: #a0a0a0;
   cursor: default;
   user-select: none;
+  font-size: 14px;
+  line-height: 17px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #footer {
   position: fixed;
   bottom: 0;
   width: 100%;
-  height: 40px;
-  background: #fafbfc;
-}
-
-.setting-form {
-  padding-left: 20px;
-}
-
-#setting .el-card,
-#detail .el-card {
-  margin: 10px;
-}
-
-.gap {
-  padding-left: 2px;
-  padding-right: 2px;
+  height: 30px;
+  text-align: center;
+  padding: 6px 5px 5px;
+  background: #fafafa;
+  user-select: none;
 }
 
 .drawer-header {
   font-size: 1.5em;
   font-weight: bold;
-}
-
-.wrap {
-  word-break: break-all;
 }
 
 .setting-button,
@@ -835,23 +1039,23 @@ export default {
   color: #808080;
 }
 
-.el-col {
-  padding-top: 5px;
-  text-align: center;
+.drawer {
+  height: 100%;
+  width: 100%;
 }
 </style>
+
 <style>
-.detail-drawer .el-dialog__wrapper {
-  pointer-events: none;
+body {
+  overflow-x: hidden;
 }
 
-.detail-drawer .el-dialog__wrapper .el-drawer.rtl {
-  pointer-events: all;
+.el-drawer.rtl,
+.el-drawer.ltr {
+  overflow: auto;
 }
 
-.el-drawer.ltr,
-.el-drawer.rtl {
-  overflow-y: auto;
+.el-drawer {
+  outline: none;
 }
 </style>
-

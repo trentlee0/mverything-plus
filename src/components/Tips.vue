@@ -1,5 +1,31 @@
 <template>
-  <div>
+  <div id="container">
+    <el-card>
+      <div
+        class="clearfix"
+        slot="header"
+      >
+        <b>快捷键</b>
+      </div>
+
+      <el-table
+        :data="keyboardTableData"
+        stripe
+        border
+        size="small"
+        style="width: 100%">
+        <el-table-column
+          prop="action"
+          width="80"
+          label="操作">
+        </el-table-column>
+        <el-table-column
+          prop="keyboard"
+          label="快捷键">
+        </el-table-column>
+      </el-table>
+
+    </el-card>
     <el-card>
       <div
         class="clearfix"
@@ -83,6 +109,44 @@ export default {
   name: "Tips",
   data() {
     return {
+      keyboardTableData: [
+        {
+          action: "开始搜索",
+          keyboard: "⏎"
+        },
+        {
+          action: "输入框获得焦点",
+          keyboard: "⌘ F"
+        },
+        {
+          action: "显示详情 (列表模式)",
+          keyboard: "→"
+        },
+        {
+          action: "打开文件",
+          keyboard: "⌘ O"
+        },
+        {
+          action: "在访达中显示",
+          keyboard: "⌘ ⏎"
+        },
+        {
+          action: "复制文件",
+          keyboard: "⌘ C"
+        },
+        {
+          action: "复制文件名",
+          keyboard: " ⌥ ⌘ C"
+        },
+        {
+          action: "复制文件路径",
+          keyboard: "⇧ ⌘ C"
+        },
+        {
+          action: "滚动到第一条数据",
+          keyboard: "⌘ T"
+        }
+      ],
       spotlightTableData: [
         {
           desc: "音频/音乐",
@@ -120,16 +184,16 @@ export default {
           keyword: "date:yesterday"
         },
         {
-          desc: "明天",
-          keyword: "date:tomorrow"
-        },
-        {
           desc: "这周",
           keyword: "date:this week"
         },
         {
-          desc: "下周",
-          keyword: "date:next week"
+          desc: "这月",
+          keyword: "date:this month"
+        },
+        {
+          desc: "这年",
+          keyword: "date:this year"
         }
       ]
     };
@@ -143,6 +207,10 @@ export default {
 </script>
 
 <style scoped>
+#container {
+  overflow-y: auto;
+}
+
 .el-card {
   margin: 10px;
 }

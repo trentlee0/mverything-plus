@@ -37,9 +37,8 @@ const store = new Vuex.Store({
         videoExtension: "mp4,flv",
         audioExtension: "mp3,ogg,wav",
         isAutoSearch: true,
-        isShowTempDirAllFiles: true,
+        isShowFilesInTempDir: true,
         isUseSystemFileIcon: true,
-        isShowDetailPage: true
       },
       _rev: ""
     }

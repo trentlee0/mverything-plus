@@ -6,6 +6,7 @@ import "vxe-table/lib/index.css";
 import ElementUI from "element-ui";
 import "../theme/index.css";
 import store from "./store/index";
+import "animate.css";
 
 Vue.use(VXETable);
 Vue.use(ElementUI);

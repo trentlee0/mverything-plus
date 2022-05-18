@@ -12,6 +12,7 @@
     "main": "http://127.0.0.1:8080"
   },
   "pluginSetting": {
+    "height": 531,
     "single": true
   },
   "features": [{
