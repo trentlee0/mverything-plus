@@ -389,8 +389,6 @@ export default {
   mounted() {
     this.tableData = [];
     this.reloadTableData();
-    let tempPath = utools.getPath("temp");
-    window.initTempPath(tempPath);
 
     const preview = utools.dbStorage.getItem("enablePreviewContent");
     this.enablePreviewContent = preview === null ? true : preview;
@@ -923,7 +921,7 @@ export default {
           this.scrollToTop();
         }, 50);
 
-        if (this.isOverEnter) {
+        if (this.isOverEnter || this.tempDir !== "") {
           // 解决横向滚动条问题
           this.$refs.xTable.recalculate(true);
           this.isOverEnter = false;
