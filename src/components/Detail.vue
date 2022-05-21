@@ -45,6 +45,7 @@
             <video
               :src="item.path"
               controls
+              controlslist="nofullscreen"
               muted
               ref="videoPlayer"
               style="width: 100%"
