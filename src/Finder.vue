@@ -432,6 +432,7 @@ export default {
         // 把上次搜索的关键字设置到输入框中
         if (this.tempDir === "") {
           utools.setSubInputValue(this.query);
+          utools.subInputSelect();
         }
       });
     });
@@ -667,12 +668,14 @@ export default {
       }
       // →
       else if (keyCode === 39) {
-        // 在列表模式才处理
-        if (this.isListMode) {
-          clearTimeout(this.detailDrawerTimer);
-          this.detailDrawerTimer = setTimeout(() => {
-            this.showDetailDrawer();
-          }, 100);
+        if (!this.settingDrawer.open && !this.tipDrawer.open) {
+          // 在列表模式才处理
+          if (this.isListMode) {
+            clearTimeout(this.detailDrawerTimer);
+            this.detailDrawerTimer = setTimeout(() => {
+              this.showDetailDrawer();
+            }, 100);
+          }
         }
       }
       // ⌘ C
