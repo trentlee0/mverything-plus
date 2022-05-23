@@ -372,10 +372,10 @@ export default {
         "image": "图片",
         "audio": "音频",
         "movie": "视频",
+        "pdf": "PDF",
         "Word": "Word",
-        "PowerPoint": "PPT",
         "Excel": "Excel",
-        "pdf": "PDF"
+        "PowerPoint": "PPT"
       },
       currentKind: "no"
     };
@@ -418,6 +418,9 @@ export default {
           : this.rootDir
         : this.tempDir;
     },
+    isNoFilter() {
+      return this.currentKind === "no";
+    },
     emptyImage() {
       return emptyImage;
     }
@@ -439,7 +442,7 @@ export default {
         let timer = null;
         utools.setSubInput(({ text }) => {
           // 去除右边空格后，与之前查询相同不处理
-          if (this.trimRight(text) === this.query && this.tableData.length) return;
+          if (this.query !== "" && this.trimRight(text) === this.query && this.tableData.length) return;
           // 把输入更新到变量中
           this.query = text;
           // 搜索内容为空，当在文件夹中搜索时，显示全部文件
@@ -469,6 +472,8 @@ export default {
         if (this.tempDir === "") {
           utools.setSubInputValue(this.query);
           utools.subInputSelect();
+        } else {
+          this.query = "";
         }
       });
     });
@@ -501,7 +506,7 @@ export default {
         // 表格获得焦点
         document.querySelector(".list-table").focus();
       });
-      if (this.currentKind === "no" && this.isListAllFiles) {
+      if (this.isNoFilter && this.isListAllFiles) {
         this.searchAll();
       } else {
         this.search(this.query);
@@ -575,7 +580,7 @@ export default {
       return str.replace(/(\s*$)/g, "");
     },
     searchAll() {
-      this.search(this.currentKind === "no" ? "* = *" : "");
+      this.search(this.isNoFilter ? "* = *" : "");
     },
     // 搜索
     search(query) {
@@ -583,7 +588,7 @@ export default {
       this.loading = true;
 
       // 如果搜索的关键字为空
-      if (query === "" && this.currentKind === "no") {
+      if (query === "" && this.isNoFilter) {
         this.reset();
         return;
       }
@@ -612,7 +617,7 @@ export default {
         }
 
         // 如果搜索的关键字还是为空
-        if (query.trim() === "" && this.currentKind === "no") {
+        if (query.trim() === "" && this.isNoFilter) {
           this.reset();
           return;
         }
@@ -623,7 +628,7 @@ export default {
       // 判断当前配置设置的搜索模式
       let isOnlyName = !this.settings.data.isFindFileContent;
 
-      const realQuery = this.currentKind !== "no" ? `kind:${this.currentKind} ${query}` : query;
+      const realQuery = this.isNoFilter ? query : `kind:${this.currentKind} ${query}`;
 
       // 搜索
       window.find(realQuery, isOnlyName, dir, result => {
