@@ -1,6 +1,20 @@
 <template>
   <div id="page">
     <div id="finder">
+      <el-tabs
+        v-model="currentKind"
+        @tab-click="filterKindChangeEvent"
+        style="background: #fafbfc;line-height: 30px; height: 29px; overflow: hidden; border-bottom: #fafbfc solid 1px;"
+        type="border-card"
+        @keydown.native.capture="handleTabKeydownEvent"
+      >
+        <el-tab-pane
+          :label="value"
+          :name="key"
+          v-for="(value, key, index) of filterKinds"
+          :key="index" />
+      </el-tabs>
+
       <div id="finder-main">
         <div
           id="main-list"
@@ -20,7 +34,6 @@
             @current-change="currentChangeEvent"
             highlight-current-row
             @cell-mouseenter="mouseEnterTableEvent"
-            row-class-name="row-color"
             ref="xTable"
             :row-config="{height: rowHeight}"
             empty-text=""
@@ -66,9 +79,6 @@
                       style="text-align: right;"
                       v-show="isListMode"
                     >
-                      <!--                      <div v-show="row.viewNum !== undefined">-->
-                      <!--                        ⌘ {{ row.viewNum }}-->
-                      <!--                      </div>-->
                       <div style="font-size: medium;">
                         {{ formatDatetime(row.updateDate) }}
                       </div>
@@ -98,7 +108,7 @@
           type="flex"
         >
           <el-col
-            :span="4"
+            :span="3"
             style="padding-left: 15px;text-align: left"
           >
             <div
@@ -119,7 +129,16 @@
             </div>
           </el-col>
 
-          <el-col :span="7">
+          <el-col :span="4">
+            <div
+              style="overflow: hidden; text-overflow: ellipsis;white-space:nowrap;"
+              :title="currentDir"
+            >
+              {{ currentDir }}
+            </div>
+          </el-col>
+
+          <el-col :span="4">
             <div class="sort-button" style="margin-right: 15px;">
               <i v-show="sort.type === -1" title="升序" class="el-icon-caret-top" @click="handleSortChange"></i>
               <i v-show="sort.type === 1" title="降序" class="el-icon-caret-bottom" @click="handleSortChange"></i>
@@ -166,7 +185,6 @@
     <el-dialog
       :visible.sync="deleteDialog.show"
       @close="deleteDialogCloseEvent"
-      @open="deleteDialogOpenEvent"
       title="提示"
       width="300px"
     >
@@ -329,9 +347,6 @@ export default {
           }
         ]
       ],
-      keyboardEvent: {
-        enter: true
-      },
       deleteDialog: {
         show: false,
         file: null
@@ -351,7 +366,18 @@ export default {
       ],
       displayItemIndex: 0,
       detailDrawerTimer: null,
-      isOverEnter: false
+      isOverEnter: false,
+      filterKinds: {
+        "no": "不筛选",
+        "image": "图片",
+        "audio": "音频",
+        "movie": "视频",
+        "Word": "Word",
+        "PowerPoint": "PPT",
+        "Excel": "Excel",
+        "pdf": "PDF"
+      },
+      currentKind: "no"
     };
   },
   computed: {
@@ -382,6 +408,16 @@ export default {
     listFileDateSizeItemWidth() {
       return this.isNotEmptyDetail ? 0 : 5;
     },
+    isListAllFiles() {
+      return this.tempDir !== "" && this.settings.data.isShowFilesInTempDir;
+    },
+    currentDir() {
+      return this.tempDir === ""
+        ? this.settings.data.searchRoot === "user"
+          ? this.homeDir
+          : this.rootDir
+        : this.tempDir;
+    },
     emptyImage() {
       return emptyImage;
     }
@@ -407,7 +443,7 @@ export default {
           // 把输入更新到变量中
           this.query = text;
           // 搜索内容为空，当在文件夹中搜索时，显示全部文件
-          if (this.tempDir !== "" && this.settings.data.isShowFilesInTempDir) {
+          if (this.isListAllFiles) {
             clearTimeout(timer);
             if (!this.query) {
               this.searchAll();
@@ -424,7 +460,7 @@ export default {
         }, "搜索");
 
         // 进入在文件夹中搜索，显示全部文件
-        if (this.tempDir !== "" && this.settings.data.isShowFilesInTempDir) {
+        if (this.isListAllFiles) {
           clearTimeout(timer);
           this.searchAll();
         }
@@ -439,6 +475,7 @@ export default {
     utools.onPluginOut(() => {
       this.tempDir = "";
       this.reset();
+      this.currentKind = "no";
       this.detailDrawer.open = false;
       window.killMdfind();
     });
@@ -452,6 +489,24 @@ export default {
     document.removeEventListener("mousemove", this.mouseMoveEvent);
   },
   methods: {
+    // 阻止 Tab 的默认键盘事件
+    handleTabKeydownEvent(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.keyDownEvent(event);
+    },
+    filterKindChangeEvent(tab, event) {
+      utools.subInputFocus();
+      this.$nextTick(() => {
+        // 表格获得焦点
+        document.querySelector(".list-table").focus();
+      });
+      if (this.currentKind === "no" && this.isListAllFiles) {
+        this.searchAll();
+      } else {
+        this.search(this.query);
+      }
+    },
     // 切换显示模式
     mouseMoveEvent() {
       clearTimeout(this.mouseMoveTimer);
@@ -481,34 +536,17 @@ export default {
       this.homeDir = utools.getPath("home");
       return new Promise((resolve, reject) => {
         try {
-          const h = this.$createElement;
           if (type === "files") {
-            this.$notify({
-              title: "当前搜索路径",
-              message: h("code", { style: "word-break: break-all" }, payload[0].path),
-              duration: 3000
-            });
             this.tempDir = payload[0].path;
             resolve();
           } else if (type === "window") {
             utools.readCurrentFolderPath().then(dir => {
-              this.$notify({
-                title: "当前搜索路径",
-                message: h("code", { style: "word-break: break-all" }, dir),
-                duration: 3000
-              });
               this.tempDir = dir;
               resolve();
             }).catch(err => {
               // 报错选择桌面路径
               console.error(err);
-              const dir = utools.getPath("desktop");
-              this.$notify({
-                title: "当前搜索路径",
-                message: h("code", { style: "word-break: break-all" }, dir),
-                duration: 3000
-              });
-              this.tempDir = dir;
+              this.tempDir = utools.getPath("desktop");
               resolve();
             });
           } else if (type === "over") {
@@ -537,7 +575,7 @@ export default {
       return str.replace(/(\s*$)/g, "");
     },
     searchAll() {
-      this.search("* = *");
+      this.search(this.currentKind === "no" ? "* = *" : "");
     },
     // 搜索
     search(query) {
@@ -545,7 +583,7 @@ export default {
       this.loading = true;
 
       // 如果搜索的关键字为空
-      if (query === "") {
+      if (query === "" && this.currentKind === "no") {
         this.reset();
         return;
       }
@@ -574,23 +612,21 @@ export default {
         }
 
         // 如果搜索的关键字还是为空
-        if (query.trim() === "") {
+        if (query.trim() === "" && this.currentKind === "no") {
           this.reset();
           return;
         }
       }
 
       // 判断当前配置中设置的搜索起始目录
-      let dir =
-        this.tempDir === ""
-          ? this.settings.data.searchRoot === "user"
-            ? this.homeDir
-            : this.rootDir
-          : this.tempDir;
+      let dir = this.currentDir;
       // 判断当前配置设置的搜索模式
       let isOnlyName = !this.settings.data.isFindFileContent;
+
+      const realQuery = this.currentKind !== "no" ? `kind:${this.currentKind} ${query}` : query;
+
       // 搜索
-      window.find(query, isOnlyName, dir, result => {
+      window.find(realQuery, isOnlyName, dir, result => {
         if (this.$refs.xTable) {
           // 处理搜索结果
           this.tableData = Handler.handle(
@@ -641,14 +677,17 @@ export default {
     keyDownEvent(event) {
       // 获取当前按下的键
       let keyCode = window.event ? event.keyCode : event.which;
+      // 打开设置、帮助页面、删除窗口不执行
+      if (keyCode !== 27 && (this.settingDrawer.open || this.tipDrawer.open) || this.deleteDialog.show) {
+        return;
+      }
+
       // 回车
       if (keyCode === 13 && !event.metaKey) {
-        if (this.keyboardEvent.enter) {
-          // 开启加载中进度条
-          this.loading = true;
-          // 执行搜索
-          this.search(this.query);
-        }
+        // 开启加载中进度条
+        this.loading = true;
+        // 执行搜索
+        this.search(this.query);
       }
       // ⌘ F
       else if (keyCode === 70 && event.metaKey) {
@@ -765,11 +804,8 @@ export default {
         this.$refs.xTable.setCurrentRow(this.tableData[index + offset]);
       }
     },
-    deleteDialogOpenEvent() {
-      this.keyboardEvent.enter = false;
-    },
     deleteDialogCloseEvent() {
-      this.keyboardEvent.enter = true;
+      utools.subInputFocus();
     },
     currentChangeEvent({ row }) {
       this.$refs.xTable.setCurrentRow(row);
@@ -974,7 +1010,7 @@ export default {
 }
 
 #finder-main {
-  height: calc(100% - 40px);
+  height: calc(100% - 70px);
   overflow: hidden;
 }
 
@@ -1030,6 +1066,34 @@ export default {
   font-weight: bold;
 }
 
+.filter-items-group {
+  display: flex;
+  height: 25px;
+  font-size: 14px;
+  line-height: 25px;
+  background-color: #FAFAFA;
+}
+
+.filter-items-group:hover {
+  background: #DDDFE5;
+}
+
+.filter-item {
+  color: #808080;
+  padding: 0 2px;
+  border-right: #ccc solid 1px;
+  cursor: pointer;
+}
+
+
+.filter-item-active {
+  background: #D9D9D9;
+}
+
+.filter-item-active {
+  background: #C0BFBF;
+}
+
 .setting-button,
 .tip-button,
 .sort-button {
@@ -1043,6 +1107,29 @@ export default {
 .drawer {
   height: 100%;
   width: 100%;
+}
+
+
+/* 修改 ElementUI 默认样式 */
+/deep/ .el-tabs__item {
+  height: 30px;
+  line-height: 30px;
+}
+
+/deep/ .el-tabs__nav-scroll {
+  background: #FAFAFA;
+}
+
+/deep/ .el-tabs--border-card {
+  border-top: 0;
+  border-right: solid #fff 1px;
+  border-left: solid #fff 1px;
+}
+
+/deep/ .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+  background: #f0f0f0;
+  border-right: solid #fff 1px;
+  border-left: solid #fff 1px;
 }
 </style>
 

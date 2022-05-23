@@ -2,7 +2,7 @@
   "pluginName": "Mverything Plus",
   "author": "Trent0",
   "homepage": "https://github.com/trentlee0/mverything-plus",
-  "description": "查找文件，Mac 上的 Everything",
+  "description": "文件查找、搜索",
   "version": "1.0.0",
   "logo": "logo.png",
   "main": "index.html",
@@ -12,7 +12,7 @@
     "main": "http://127.0.0.1:8080"
   },
   "pluginSetting": {
-    "height": 531,
+    "height": 561,
     "single": true
   },
   "features": [{
