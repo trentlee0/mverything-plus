@@ -92,6 +92,12 @@
             </div>
           </el-form-item>
           <el-form-item
+            label="尺寸"
+            v-show="item.width"
+          >
+            <div>{{ item.width }} × {{ item.height }}</div>
+          </el-form-item>
+          <el-form-item
             label="大小"
             v-show="item.size"
           >
@@ -111,7 +117,7 @@
           <el-form-item label="更新时间">
             <div>{{ formatDatetime(item.updateDate) }}</div>
           </el-form-item>
-          <el-form-item label="打开时间" v-if="item.usedDate">
+          <el-form-item label="打开时间" v-show="item.usedDate">
             <div>{{ formatDatetime(item.usedDate) }}</div>
           </el-form-item>
         </el-form>

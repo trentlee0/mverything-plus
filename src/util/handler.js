@@ -49,6 +49,8 @@ export default {
         createDate: item.kMDItemFSCreationDate,
         updateDate: item.kMDItemFSContentChangeDate,
         usedDate: item.kMDItemLastUsedDate,
+        height: item.kMDItemPixelHeight,
+        width: item.kMDItemPixelWidth,
         text: "",
         thumbnails: "",
         preview: "",

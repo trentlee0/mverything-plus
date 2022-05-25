@@ -223,7 +223,9 @@ window.find = (name, onlyName, dir, callback) => {
       "kMDItemFSNodeCount",
       "kMDItemFSCreationDate",
       "kMDItemFSContentChangeDate",
-      "kMDItemLastUsedDate"
+      "kMDItemLastUsedDate",
+      "kMDItemPixelHeight",
+      "kMDItemPixelWidth",
     ]).on("data", data => {
       tempData.push(data);
     }).on("end", () => {
