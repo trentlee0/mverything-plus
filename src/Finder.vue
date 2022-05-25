@@ -378,7 +378,8 @@ export default {
         "PowerPoint": "PPT"
       },
       currentKind: "no",
-      currentKindIndex: 0
+      currentKindIndex: 0,
+      currentKindChangeTimer: null
     };
   },
   computed: {
@@ -484,7 +485,6 @@ export default {
       this.currentKind = "no";
       this.currentKindIndex = 0;
       this.detailDrawer.open = false;
-      window.killMdfind();
     });
     // 绑定键盘事件
     document.addEventListener("keydown", this.keyDownEvent);
@@ -565,6 +565,7 @@ export default {
       // 清空结果表格
       this.tableData = [];
       this.reloadTableData();
+      window.killMdfind();
       this.item = {};
       // 关闭加载进度条
       this.loading = false;
@@ -1007,11 +1008,15 @@ export default {
         // 表格获得焦点
         document.querySelector(".list-table").focus();
       });
-      if (this.isNoFilter && this.isListAllFiles) {
-        this.searchAll();
-      } else {
-        this.search(this.query);
-      }
+      clearTimeout(this.currentKindChangeTimer);
+      this.currentKindChangeTimer = setTimeout(() => {
+        // 在不筛选选项卡中并且没有搜索词，列出所有文件
+        if (this.isNoFilter && this.query === "" && this.isListAllFiles) {
+          this.searchAll();
+        } else {
+          this.search(this.query);
+        }
+      }, 300);
     }
   }
 };
