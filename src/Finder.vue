@@ -377,7 +377,8 @@ export default {
         "Excel": "Excel",
         "PowerPoint": "PPT"
       },
-      currentKind: "no"
+      currentKind: "no",
+      currentKindIndex: 0
     };
   },
   computed: {
@@ -481,6 +482,7 @@ export default {
       this.tempDir = "";
       this.reset();
       this.currentKind = "no";
+      this.currentKindIndex = 0;
       this.detailDrawer.open = false;
       window.killMdfind();
     });
@@ -501,16 +503,7 @@ export default {
       this.keyDownEvent(event);
     },
     filterKindChangeEvent(tab, event) {
-      utools.subInputFocus();
-      this.$nextTick(() => {
-        // 表格获得焦点
-        document.querySelector(".list-table").focus();
-      });
-      if (this.isNoFilter && this.isListAllFiles) {
-        this.searchAll();
-      } else {
-        this.search(this.query);
-      }
+      this.currentKindIndex = parseInt(tab.index);
     },
     // 切换显示模式
     mouseMoveEvent() {
@@ -711,7 +704,7 @@ export default {
         }
       }
       // →
-      else if (keyCode === 39) {
+      else if (keyCode === 39 && !event.metaKey) {
         if (!this.settingDrawer.open && !this.tipDrawer.open) {
           // 在列表模式才处理
           if (this.isListMode) {
@@ -767,6 +760,21 @@ export default {
         if (this.tipDrawer.open) this.tipDrawer.open = false;
         if (this.detailDrawer.open) this.detailDrawer.open = false;
         event.stopPropagation();
+      }
+      // ⇧ ⌘ ]
+      else if (keyCode === 221 && event.metaKey && event.shiftKey) {
+        const kinds = Object.keys(this.filterKinds);
+        let index = (this.currentKindIndex + 1) % kinds.length;
+        this.currentKindIndex = index;
+        this.currentKind = kinds[index];
+      }
+      // ⇧ ⌘ [
+      else if (keyCode === 219 && event.metaKey && event.shiftKey) {
+        const kinds = Object.keys(this.filterKinds);
+        let index = this.currentKindIndex - 1;
+        if (index === -1) index = kinds.length - 1;
+        this.currentKindIndex = index;
+        this.currentKind = kinds[index];
       }
     },
     // 表格快捷菜单点击事件
@@ -965,7 +973,7 @@ export default {
           this.scrollToTop();
         }, 50);
 
-        if (this.isOverEnter || this.tempDir !== "") {
+        if (this.isOverEnter || this.tempDir !== "" || this.currentKind !== "no") {
           // 解决横向滚动条问题
           this.$refs.xTable.recalculate(true);
           this.isOverEnter = false;
@@ -991,6 +999,18 @@ export default {
           menu[0].visible = newVal;
           break;
         }
+      }
+    },
+    currentKind() {
+      utools.subInputFocus();
+      this.$nextTick(() => {
+        // 表格获得焦点
+        document.querySelector(".list-table").focus();
+      });
+      if (this.isNoFilter && this.isListAllFiles) {
+        this.searchAll();
+      } else {
+        this.search(this.query);
       }
     }
   }

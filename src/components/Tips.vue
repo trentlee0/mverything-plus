@@ -123,6 +123,10 @@ export default {
           keyboard: "→"
         },
         {
+          action: "左右切换类型筛选",
+          keyboard: "⇧ ⌘ [ 或 ]"
+        },
+        {
           action: "打开文件",
           keyboard: "⌘ O"
         },
