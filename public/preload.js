@@ -225,7 +225,7 @@ window.find = (name, onlyName, dir, callback) => {
       "kMDItemFSContentChangeDate",
       "kMDItemLastUsedDate",
       "kMDItemPixelHeight",
-      "kMDItemPixelWidth",
+      "kMDItemPixelWidth"
     ]).on("data", data => {
       tempData.push(data);
     }).on("end", () => {
@@ -281,4 +281,12 @@ window.readFileList = (path, callback) => {
     }
   }
   callback(fileList);
+};
+
+window.isDirExists = (path) => {
+  return new Promise((resolve) => {
+    fs.stat(path, (err, stat) => {
+      resolve(err ? false : stat.isDirectory());
+    });
+  });
 };

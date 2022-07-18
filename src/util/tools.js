@@ -10,10 +10,10 @@ export default {
     return number.toFixed(fixed);
   },
   handleBytesToHuman(byteSize) {
-    if (byteSize > 1000000000) return this.numberFix(byteSize / 1000000000, 2) + "GB";
-    else if (byteSize > 1000000) return this.numberFix(byteSize / 1000000, 2) + "MB";
-    else if (byteSize > 1000) return this.numberFix(byteSize / 1000, 2) + "KB";
-    else if (byteSize > 0) return byteSize + "B";
+    if (byteSize > 1000000000) return this.numberFix(byteSize / 1000000000, 2) + " GB";
+    else if (byteSize > 1000000) return this.numberFix(byteSize / 1000000, 2) + " MB";
+    else if (byteSize > 1000) return this.numberFix(byteSize / 1000, 2) + " KB";
+    else if (byteSize > 0) return byteSize + " B";
     return "";
   },
   getExtension(name) {

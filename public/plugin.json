@@ -36,6 +36,13 @@
         }
       },
       {
+        "type": "regex",
+        "label": "文件夹中搜索",
+        "match": "/^(\\/[^/\\n\\r\\f\\v]+)+\\/?$/",
+        "minLength": 1,
+        "maxLength": 300
+      },
+      {
         "type": "over",
         "label": "搜索",
         "exclude": "/[\\\\\\/\\t\\n]/",

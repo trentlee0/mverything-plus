@@ -15,11 +15,10 @@
           :key="index" />
       </el-tabs>
 
-      <div id="finder-main">
+      <div id="finder-main" v-loading="loading">
         <div
           id="main-list"
           :style="{width: listWidth}"
-          v-loading="loading"
         >
           <vxe-table
             class="list-table"
@@ -402,7 +401,7 @@ export default {
       return this.rowHeight + 1;
     },
     detailWidth() {
-      return this.isNotEmptyDetail ? "45%" : "0%";
+      return "45%";
     },
     listFileNamePathItemWidth() {
       return this.isNotEmptyDetail ? 24 : 19;
@@ -551,6 +550,13 @@ export default {
             this.query = payload;
             this.isOverEnter = true;
             resolve();
+          } else if (type === "regex") {
+            window.isDirExists(payload).then((exists) => {
+              if (exists) {
+                this.tempDir = payload;
+              }
+              resolve();
+            });
           } else {
             resolve();
           }
@@ -1157,7 +1163,7 @@ export default {
 }
 
 /deep/ .el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
-  background: #f0f0f0;
+  background: #eaeaea;
   border-right: solid #fff 1px;
   border-left: solid #fff 1px;
 }
