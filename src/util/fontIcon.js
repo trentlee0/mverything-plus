@@ -1,7 +1,7 @@
-import { mdiFormatListBulleted } from "@mdi/js";
-import { mdiViewWeekOutline } from "@mdi/js";
+import { mdiFormatListBulleted, mdiViewWeekOutline, mdiMagnify } from "@mdi/js";
 
 export default {
   "formatListBulleted": mdiFormatListBulleted,
-  "viewWeekOutline": mdiViewWeekOutline
+  "viewWeekOutline": mdiViewWeekOutline,
+  "magnify": mdiMagnify
 };

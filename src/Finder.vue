@@ -1,23 +1,45 @@
 <template>
   <div id="page">
     <div id="finder">
-      <el-tabs
-        v-model="currentKind"
-        @tab-click="filterKindChangeEvent"
-        style="background: #fafbfc;line-height: 30px; height: 29px; overflow: hidden; border-bottom: #fafbfc solid 1px;"
-        type="border-card"
-        @keydown.native.capture="handleTabKeydownEvent"
-      >
-        <el-tab-pane
-          :label="value"
-          :name="key"
-          v-for="(value, key, index) of filterKinds"
-          :key="index" />
-      </el-tabs>
+      <el-row style="padding: 2px 0;background: #fafafa;" type="flex">
+        <el-col :span="isSearchFocus ? 8 : 3"
+                style="display: flex; justify-content: center; align-items: center; margin-left: 10px">
+          <SearchInput
+            ref="searchInputRef"
+            :value="query"
+            height="26px"
+            width="100%"
+            @input="handleSearch" />
+        </el-col>
+
+        <el-col :span="1"></el-col>
+
+        <el-col
+          :span="isSearchFocus ? 14 : 19"
+          style="overflow: hidden;"
+          type="flex"
+          align="center"
+        >
+          <el-tabs
+            v-model="currentKind"
+            @tab-click="filterKindChangeEvent"
+            style="background: #fafafa;line-height: 30px; height: 29px; overflow: hidden; border-bottom: #fafafa solid 1px;"
+            type="border-card"
+            @keydown.native.capture="handleTabKeydownEvent"
+          >
+            <el-tab-pane
+              :label="value"
+              :name="key"
+              v-for="(value, key, index) of filterKinds"
+              :key="index" />
+          </el-tabs>
+        </el-col>
+      </el-row>
 
       <div id="finder-main" v-loading="loading">
         <div
           id="main-list"
+          style="position: relative;"
           :style="{width: listWidth}"
         >
           <vxe-table
@@ -38,6 +60,7 @@
             empty-text=""
             show-overflow
             tabindex="0"
+            @scroll="handleTableScroll"
           >
             <template #empty>
               <div style="display: flex; justify-content: center; align-items: center;">
@@ -65,7 +88,7 @@
                     :style="{height: rowHeight + 'px'}"
                   >
                     <el-col
-                      :span="listFileNamePathItemWidth"
+                      :span="listFileBaseWidth"
                       style="text-align: left;"
                     >
                       <div class="name">{{ row.name }}</div>
@@ -74,9 +97,9 @@
                       </div>
                     </el-col>
                     <el-col
-                      :span="listFileDateSizeItemWidth"
-                      style="text-align: right;"
                       v-show="isListMode"
+                      :span="listFileMetaWidth"
+                      style="text-align: right;"
                     >
                       <div style="font-size: medium;">
                         {{ formatDatetime(row.updateDate) }}
@@ -85,11 +108,28 @@
                         {{ handleByteSize(row.size) }}
                       </div>
                     </el-col>
+                    <el-col :span="listFileShortcutWidth">
+                    </el-col>
                   </el-row>
                 </div>
               </template>
             </vxe-table-column>
           </vxe-table>
+
+          <div
+            v-show="isShowShortcuts"
+            style="width: 40px; position: absolute; top: 0; background: transparent; z-index: 10; color: grey;"
+            :style="`right: ${18}px;`"
+          >
+            <div
+              v-for="i in Math.min(tableData.length, rowCount)"
+              :key="i"
+              style="display: flex; justify-content: center; align-items: center; border-bottom: 1px solid transparent; font-size: medium"
+              :style="`height: ${rowHeight}px`"
+            >
+              ⌘ {{ i % 10 }}
+            </div>
+          </div>
         </div>
 
         <div
@@ -217,7 +257,7 @@
       :visible.sync="detailDrawer.open"
       :with-header="false"
     >
-      <Detail :item="item"></Detail>
+      <Detail v-if="isListMode" :item="item"></Detail>
     </el-drawer>
 
     <!-- 设置界面 -->
@@ -272,10 +312,13 @@ import DisplayItemGroup from "@/components/DisplayItemGroup";
 import Detail from "@/components/Detail";
 
 import emptyImage from "@/assets/empty_inbox.svg";
+import { debounce } from "./util/common";
+import SearchInput from "./components/SearchInput";
 
 export default {
   name: "Finder",
   components: {
+    SearchInput,
     Detail,
     DisplayItemGroup,
     CopyButton,
@@ -365,6 +408,7 @@ export default {
       ],
       displayItemIndex: 0,
       detailDrawerTimer: null,
+      // utools over type
       isOverEnter: false,
       filterKinds: {
         "no": "不筛选",
@@ -378,14 +422,19 @@ export default {
       },
       currentKind: "no",
       currentKindIndex: 0,
-      currentKindChangeTimer: null
+      currentKindChangeTimer: null,
+      isShowShortcuts: true,
+      // 可视窗口行数
+      rowCount: 10,
+      autoSearchTimer: null,
+      isSearchFocus: true
     };
   },
   computed: {
     ...mapGetters({
       settings: "settings"
     }),
-    isNotEmptyDetail() {
+    hasDetail() {
       return this.isPreviewMode && Object.entries(this.item).length !== 0;
     },
     isPreviewMode() {
@@ -395,19 +444,23 @@ export default {
       return this.displayItems[this.displayItemIndex].code === "list";
     },
     listWidth() {
-      return this.isNotEmptyDetail ? "55%" : "100%";
+      return this.hasDetail ? "55%" : "100%";
     },
     computedRowHeight() {
+      // 每行都有 1px 的 border
       return this.rowHeight + 1;
     },
     detailWidth() {
       return "45%";
     },
-    listFileNamePathItemWidth() {
-      return this.isNotEmptyDetail ? 24 : 19;
+    listFileBaseWidth() {
+      return this.hasDetail ? 21 : 17;
     },
-    listFileDateSizeItemWidth() {
-      return this.isNotEmptyDetail ? 0 : 5;
+    listFileMetaWidth() {
+      return this.hasDetail ? 0 : 5;
+    },
+    listFileShortcutWidth() {
+      return this.hasDetail ? 3 : 2;
     },
     isListAllFiles() {
       return this.tempDir !== "" && this.settings.data.isShowFilesInTempDir;
@@ -440,39 +493,22 @@ export default {
     utools.onPluginEnter(({ code, type, payload }) => {
       // 初始化
       this.initial(code, type, payload).then(() => {
-        let timer = null;
-        utools.setSubInput(({ text }) => {
-          // 去除右边空格后，与之前查询相同不处理
-          if (this.query !== "" && this.trimRight(text) === this.query && this.tableData.length) return;
-          // 把输入更新到变量中
-          this.query = text;
-          // 搜索内容为空，当在文件夹中搜索时，显示全部文件
-          if (this.isListAllFiles) {
-            clearTimeout(timer);
-            if (!this.query) {
-              this.searchAll();
-              return;
-            }
-          }
-
-          if (this.settings.data.isAutoSearch) {
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-              this.search(this.query);
-            }, 500);
-          }
-        }, "搜索");
+        this.focusSearchInput();
+        // utools.setSubInput(({ text }) => {
+        // }, "搜索");
 
         // 进入在文件夹中搜索，显示全部文件
         if (this.isListAllFiles) {
-          clearTimeout(timer);
+          clearTimeout(this.autoSearchTimer);
           this.searchAll();
         }
 
         // 把上次搜索的关键字设置到输入框中
         if (this.tempDir === "") {
-          utools.setSubInputValue(this.query);
-          utools.subInputSelect();
+          const text = this.query;
+          this.query = '';
+          this.handleSearch(text)
+          this.selectSearchText();
         } else {
           this.query = "";
         }
@@ -495,6 +531,31 @@ export default {
     document.removeEventListener("mousemove", this.mouseMoveEvent);
   },
   methods: {
+    selectSearchText() {
+      this.$refs.searchInputRef.selectText()
+    },
+    handleSearch(text) {
+      // 去除右边空格后，与之前查询相同不处理
+      if (this.query !== "" && this.trimRight(text) === this.query && this.tableData.length) return;
+
+      // 把输入更新到变量中
+      this.query = text;
+      // 搜索内容为空，当在文件夹中搜索时，显示全部文件
+      if (this.isListAllFiles) {
+        clearTimeout(this.autoSearchTimer);
+        if (!this.query) {
+          this.searchAll();
+          return;
+        }
+      }
+
+      if (this.settings.data.isAutoSearch) {
+        clearTimeout(this.autoSearchTimer);
+        this.autoSearchTimer = setTimeout(() => {
+          this.search(this.query);
+        }, 500);
+      }
+    },
     // 阻止 Tab 的默认键盘事件
     handleTabKeydownEvent(event) {
       event.preventDefault();
@@ -696,7 +757,7 @@ export default {
       }
       // ⌘ F
       else if (keyCode === 70 && event.metaKey) {
-        utools.subInputFocus();
+        this.focusSearchInput();
       }
       // ⌘ O
       else if (keyCode === 79 && event.metaKey) {
@@ -786,9 +847,8 @@ export default {
     },
     // 表格快捷菜单点击事件
     menuClickEvent({ menu, row }) {
-      let code = menu.code;
-      let path = row.path;
-      let name = row.name;
+      const { code } = menu;
+      const { path, name } = row;
       switch (code) {
         case "detail":
           this.showDetailDrawer();
@@ -813,24 +873,44 @@ export default {
           break;
       }
     },
+    getDisplayFirstIndex() {
+      const scroller = this.$refs.xTable.getVirtualScroller();
+      return Math.round(scroller.scrollTop / this.computedRowHeight);
+    },
     // 滚动到可视窗口指定偏移行
     scrollToRowInTableView(offset = 0) {
-      const scroller = this.$refs.xTable.getVirtualScroller();
-      const index = Math.floor(scroller.scrollTop / this.computedRowHeight);
+      // 可视窗口第一条数据才需要改变滚动条
       if (offset === 0) {
-        this.$refs.xTable.scrollTo(0, index * this.computedRowHeight);
+        this.locateDisplayFirstRow();
       }
-      if (index + offset < this.tableData.length) {
-        this.$refs.xTable.setCurrentRow(this.tableData[index + offset]);
+      const targetIndex = this.getDisplayFirstIndex() + offset;
+      if (targetIndex < this.tableData.length) {
+        this.selectRow(this.tableData[targetIndex]);
       }
+    },
+    locateDisplayFirstRow() {
+      this.$refs.xTable.scrollTo(0, this.getDisplayFirstIndex() * this.computedRowHeight);
+    },
+    focusSearchInput() {
+      this.isSearchFocus = true;
+      this.$refs.searchInputRef.focus();
+      // utools.subInputFocus();
+    },
+    blurSearchInput() {
+      this.isSearchFocus = false;
+      this.$refs.searchInputRef.blur();
+      // utools.subInputBlur();
     },
     deleteDialogCloseEvent() {
-      utools.subInputFocus();
+      this.focusSearchInput();
     },
     currentChangeEvent({ row }) {
+      this.selectRow(row);
+    },
+    selectRow(row) {
       this.$refs.xTable.setCurrentRow(row);
       this.loadData(row);
-      utools.subInputFocus();
+      this.focusSearchInput();
     },
     reloadTableData() {
       this.$refs.xTable.loadData(this.tableData);
@@ -845,17 +925,14 @@ export default {
       );
       // 加载搜索结果
       this.reloadTableData();
-      // 滚动到表格顶部
       this.loading = false;
     },
     // 行单击事件
     cellClickEvent({ row }) {
-      this.$refs.xTable.setCurrentRow(row);
-      this.loadData(row);
+      this.selectRow(row);
     },
     // 行双击事件
     cellDClickEvent({ row }) {
-      // 直接打开
       utools.shellOpenPath(row.path);
     },
     // 抽屉关闭事件
@@ -926,10 +1003,10 @@ export default {
     showDetailDrawer() {
       if (this.detailDrawer.open) {
         this.detailDrawer.open = false;
-        utools.subInputFocus();
+        this.focusSearchInput();
       } else {
         this.detailDrawer.open = true;
-        utools.subInputBlur();
+        this.blurSearchInput();
       }
     },
     detailFolderTableDbClickEvent(row, column, event) {
@@ -947,8 +1024,7 @@ export default {
       this.$refs.xTable.scrollTo(0, 0);
       if (this.tableData.length) {
         // 设置第一条结果的高亮
-        this.$refs.xTable.setCurrentRow(this.tableData[0]);
-        this.loadData(this.tableData[0]);
+        this.selectRow(this.tableData[0]);
       }
     },
     loadFileContent() {
@@ -971,7 +1047,16 @@ export default {
         message: `已复制${detail ? detail : ""}`,
         type: "success"
       });
-    }
+    },
+    handleTableScroll: debounce(function(e) {
+      // 减去最底部一行 1px 高的 border
+      const tableScrollHeight = (this.tableData.length - this.rowCount) * this.computedRowHeight - 1;
+      if (tableScrollHeight === e.scrollTop) {
+        console.log("scroll end");
+      } else {
+        this.locateDisplayFirstRow();
+      }
+    }, 50)
   },
   watch: {
     tableData(newVal) {
@@ -1009,7 +1094,7 @@ export default {
       }
     },
     currentKind() {
-      utools.subInputFocus();
+      this.focusSearchInput();
       this.$nextTick(() => {
         // 表格获得焦点
         document.querySelector(".list-table").focus();

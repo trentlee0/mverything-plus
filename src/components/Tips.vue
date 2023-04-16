@@ -147,7 +147,11 @@ export default {
           keyboard: "⇧ ⌘ C"
         },
         {
-          action: "滚动到第一条数据",
+          action: "选中显示窗口第 X 条数据",
+          keyboard: "⌘ 0-9"
+        },
+        {
+          action: "选中顶部第一条数据",
           keyboard: "⌘ T"
         }
       ],
