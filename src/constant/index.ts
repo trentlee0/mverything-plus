@@ -6,7 +6,6 @@ export namespace StoreKey {
   export const IS_PREVIEW_CONTENT = 'enablePreviewContent'
 }
 
-// macOS
 export namespace FileConstant {
   export const KB = 1000
   export const MB = KB * 1000
@@ -19,6 +18,7 @@ export namespace FileConstant {
 
 export namespace ContentType {
   export const FOLDER = 'public.folder'
+
   export const IMAGE = 'public.image'
   export const AUDIO = 'public.audio'
 
@@ -38,8 +38,12 @@ export namespace ContentType {
 
   export const TEXT = 'public.text'
   export const PLAIN_TEXT = 'public.plain-text'
-  export const JAVASCRIPT = 'com.netscape.javascript-source'
-  export const JAVA = 'com.sun.java-source'
+  export const MARKDOWN = 'net.daringfireball.markdown'
+  export const SOURCE_CODE = 'public.source-code'
+
+  export const ARCHIVE = 'public.archive'
+
+  export const APPLICATION = 'com.apple.application'
 }
 
 export namespace ScopeName {
