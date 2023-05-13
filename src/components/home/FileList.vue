@@ -49,7 +49,7 @@
               {{ item.path }}
             </div>
           </template>
-          <template #append v-if="showExtra">
+          <template #append v-if="listMode">
             <div class="tw-w-7"></div>
             <div
               class="tw-font-mono tw-text-sm tw-text-neutral-500 dark:tw-text-neutral-300"
@@ -68,7 +68,7 @@
   <FinderMenu
     ref="finderMenuRef"
     :actions="contextActions"
-    :show-quick-look="showExtra"
+    :show-detail="listMode"
   ></FinderMenu>
 </template>
 
@@ -99,11 +99,13 @@ const props = withDefaults(
     itemHeight: number
     displaySize: number
     selectedIndex?: number
-    showExtra?: boolean
+    listMode?: boolean
+    isKeystroke?: boolean
   }>(),
   {
     selectedIndex: 0,
-    showExtra: false
+    listMode: false,
+    isKeystroke: true
   }
 )
 
@@ -117,20 +119,22 @@ const emit = defineEmits<{
   (e: 'update:selectedIndex', index: number): void
   (e: 'openItem'): void
   (e: 'openItemInFinder'): void
+  (e: 'showItemDetail'): void
+  (e: 'quickLookItem'): void
   (e: 'copyItem'): void
   (e: 'copyItemName'): void
   (e: 'copyItemPath'): void
-  (e: 'quickLookItem'): void
   (e: 'moveItemToTrash'): void
 }>()
 
 const contextActions = reactive({
   open: () => emit('openItem'),
   openInFinder: () => emit('openItemInFinder'),
+  showDetail: () => emit('showItemDetail'),
+  quickLook: () => emit('quickLookItem'),
   copy: () => emit('copyItem'),
   copyName: () => emit('copyItemName'),
   copyPath: () => emit('copyItemPath'),
-  quickLook: () => emit('quickLookItem'),
   moveToTrash: () => emit('moveItemToTrash')
 })
 
@@ -146,7 +150,7 @@ function handleItemClick(index: number, item: BaseFileInfo) {
 }
 
 function handleMouseEnter(index: number) {
-  if (!props.showExtra || !isMouseMove.value) return
+  if (!props.listMode || !isMouseMove.value) return
   emit('update:selectedIndex', index)
 }
 
@@ -162,8 +166,6 @@ const handleScroll = debounce((e: Event) => {
   firstIndexInWindow.value = Math.round(scrollTop / props.itemHeight)
   if (scrollTop + clientHeight === scrollHeight) {
     console.log('scroll end')
-  } else {
-    // locateToView()
   }
 }, 30)
 
@@ -172,6 +174,26 @@ function locateTo(index: number) {
 }
 
 let posInWindow = 0
+
+function refreshPosition(index: number) {
+  if (
+    firstIndexInWindow.value <= index &&
+    index < firstIndexInWindow.value + props.displaySize
+  ) {
+    posInWindow = index - firstIndexInWindow.value
+  }
+}
+
+function incrementPosition() {
+  return (
+    (posInWindow = Math.min(posInWindow + 1, maxIndexInWindow.value)) ===
+    maxIndexInWindow.value
+  )
+}
+
+function decrementPosition() {
+  return (posInWindow = Math.max(posInWindow - 1, 0)) === 0
+}
 
 /**
  * 定位到窗口最顶行
@@ -187,18 +209,6 @@ function locateToStart(index: number) {
 function locateToEnd(index: number) {
   posInWindow = maxIndexInWindow.value
   locateTo(Math.max(index - maxIndexInWindow.value, 0))
-}
-
-function locateToView() {
-  locateToStart(firstIndexInWindow.value)
-}
-
-function incrementPosition() {
-  return (posInWindow = Math.min(posInWindow + 1, maxIndexInWindow.value))
-}
-
-function decrementPosition() {
-  return (posInWindow = Math.max(posInWindow - 1, 0))
 }
 
 /**
@@ -217,50 +227,58 @@ function compareSelected(selectedIndex: number) {
   return 0
 }
 
-onKeyDown(['ArrowUp', 'ArrowDown'], (e) => {
+function scrollTo(index: number) {
+  if (isLegalIndex(props.items, index)) {
+    emit('update:selectedIndex', index)
+    locateTo(index)
+  }
+}
+
+onKeyDown(['Meta', 'ArrowUp', 'ArrowDown'], (e) => {
+  if (!props.isKeystroke) return
+
   e.preventDefault()
+  if (e.metaKey && e.key === 'Meta') return
+
+  if (e.metaKey) {
+    return scrollTo(e.key === 'ArrowUp' ? 0 : props.items.length - 1)
+  }
+
+  refreshPosition(props.selectedIndex)
 
   let index
   if (e.key === 'ArrowUp') {
     index = Math.max(props.selectedIndex - 1, 0)
     emit('update:selectedIndex', index)
 
-    if (decrementPosition() === 0) {
+    if (decrementPosition()) {
       locateToStart(index)
     }
   } else {
     index = Math.min(props.selectedIndex + 1, props.items.length - 1)
     emit('update:selectedIndex', index)
 
-    if (incrementPosition() === maxIndexInWindow.value) {
+    if (incrementPosition()) {
       locateToEnd(index)
     }
   }
   const compare = compareSelected(index)
-  if (compare === 0) return
-
   if (compare < 0) {
     locateToStart(index)
-  } else {
+  } else if (compare > 0) {
     locateToEnd(index)
   }
 })
 
 defineExpose({
   locateTo,
-  locateToView,
-  scrollTo(index: number) {
-    if (isLegalIndex(props.items, index)) {
-      emit('update:selectedIndex', index)
-      locateTo(index)
-    }
+  locateToView() {
+    locateTo(firstIndexInWindow.value)
   },
   scrollToView(offset: number) {
     const index = firstIndexInWindow.value + offset
-    if (index < props.items.length) {
+    if (isLegalIndex(props.items, index)) {
       emit('update:selectedIndex', index)
-      posInWindow = offset
-      locateToView()
     }
   }
 })

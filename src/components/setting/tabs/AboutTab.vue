@@ -63,6 +63,10 @@ const shortcuts = ref([
     keyboard: '→'
   },
   {
+    action: '快速查看（预览）',
+    keyboard: '⌃, Space'
+  },
+  {
     action: '左切换类型筛选',
     keyboard: '⇧ ⌘ ['
   },

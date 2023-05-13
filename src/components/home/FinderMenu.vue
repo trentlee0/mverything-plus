@@ -3,10 +3,11 @@
     <context-menu-item label="打开" @click="actions.open" />
     <context-menu-item label="在访达中显示" @click="actions.openInFinder" />
     <context-menu-item
-      v-show="showQuickLook"
-      label="快速查看"
-      @click="actions.quickLook"
+      v-show="showDetail"
+      label="显示详情"
+      @click="actions.showDetail"
     />
+    <context-menu-item label="快速查看" @click="actions.quickLook" />
     <context-menu-sperator />
     <context-menu-item label="拷贝" @click="actions.copy" />
     <context-menu-item label="拷贝名称" @click="actions.copyName" />
@@ -24,14 +25,15 @@ import { ref } from 'vue'
 type ActionKey =
   | 'open'
   | 'openInFinder'
+  | 'showDetail'
+  | 'quickLook'
   | 'copy'
   | 'copyName'
   | 'copyPath'
-  | 'quickLook'
   | 'moveToTrash'
 defineProps<{
   actions: Partial<Record<ActionKey, () => void>>
-  showQuickLook?: boolean
+  showDetail?: boolean
 }>()
 
 const { isDark } = useDark()

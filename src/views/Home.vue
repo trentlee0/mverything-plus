@@ -56,15 +56,17 @@
             :items="list"
             :item-height="itemHeight"
             :selected-index="selectedIndex"
-            :show-extra="isListMode"
+            :list-mode="isListMode"
             :display-size="9"
+            :is-keystroke="isCurrentScope"
             @update:selected-index="handleSelect"
             @open-item="menuActions.open"
             @open-item-in-finder="menuActions.openInFinder"
+            @show-item-detail="menuActions.showDetail"
+            @quick-look-item="menuActions.quickLook"
             @copy-item="menuActions.copy"
             @copy-item-name="menuActions.copyName"
             @copy-item-path="menuActions.copyPath"
-            @quick-look-item="menuActions.quickLook"
             @move-item-to-trash="menuActions.moveToTrash"
           ></FileList>
 
@@ -189,9 +191,16 @@ import Header from '@/components/common/Header.vue'
 import SearchInput from '@/components/home/SearchInput.vue'
 import OverlaySideNum from '@/components/home/OverlaySideNum.vue'
 import Hover from '@/components/common/Hover.vue'
-import { computed, ref, watch, reactive, onActivated } from 'vue'
+import {
+  computed,
+  ref,
+  watch,
+  reactive,
+  onActivated,
+  onBeforeUnmount
+} from 'vue'
 import { debounce, isUndefined } from 'lodash'
-import { onKeyDown, onStartTyping } from '@vueuse/core'
+import { onKeyDown, onStartTyping, useWindowFocus } from '@vueuse/core'
 import {
   DisplayModeEnum,
   SortTypeEnum,
@@ -223,7 +232,9 @@ import {
   onPluginOut,
   getPath,
   getFileIcon,
-  readCurrentFolderPath
+  readCurrentFolderPath,
+  createBrowserWindow,
+  showMainWindow
 } from 'utools-api'
 import emptyImg from '@/assets/empty_inbox.svg'
 import { buildQuery, getPlainSearchText, splitKeyword } from '@/utils/query'
@@ -356,11 +367,11 @@ async function loadFileInfo(item: BaseFileInfo) {
     ...item,
     thumbnail: getFileIcon(item.path),
     typeTree: [],
-    previewType: FilePreviewType.NONE
+    previewType: fileInfo.value?.previewType ?? FilePreviewType.NONE
   }
 
   const res = await getFileMetadata(item.path)
-  fileInfo.value.typeTree = res.contentTypeTree
+  fileInfo.value.typeTree = res.contentTypeTree ?? []
   fileInfo.value.pixelWidth = res.pixelWidth
   fileInfo.value.pixelHeight = res.pixelHeight
 
@@ -380,7 +391,11 @@ async function loadFileInfo(item: BaseFileInfo) {
         fileInfo.value.previewType = FilePreviewType.VIDEO
       } else if (audioExtension.includes(ext)) {
         fileInfo.value.previewType = FilePreviewType.AUDIO
+      } else {
+        fileInfo.value.previewType = FilePreviewType.NONE
       }
+    } else {
+      fileInfo.value.previewType = FilePreviewType.NONE
     }
   }
   if (fileInfo.value.previewType === FilePreviewType.NONE) {
@@ -431,7 +446,13 @@ async function loadFileContent(item: PreviewFileInfo) {
           item.itemCount = fileList.length
           break
         case FilePreviewType.TEXT:
-          item.fileText = await readFilePartText(item.path)
+          const { text, size, partialSize, encoding } = await readFilePartText(
+            item.path
+          )
+          item.size = size
+          item.fileText = text
+          item.readTextSize = partialSize
+          item.textEncoding = encoding
           break
       }
     } catch (err) {
@@ -477,7 +498,11 @@ function search(query: string) {
 
   searchText = statement
 
-  const currentQuery = buildQuery(searchText, searchKind.value)
+  const currentQuery = buildQuery(
+    searchText,
+    searchKind.value,
+    settingStore.isFindFileContent
+  )
   if (import.meta.env.DEV) {
     console.log('start find with:', currentQuery)
   }
@@ -564,6 +589,14 @@ const menuActions = reactive({
     if (isUndefined(selectedIndex.value)) return
     shellShowItemInFolder(list.value[selectedIndex.value].path)
   },
+  showDetail() {
+    if (isUndefined(selectedIndex.value)) return
+    previewDrawer.value = true
+  },
+  quickLook() {
+    if (isUndefined(selectedIndex.value)) return
+    quickLook()
+  },
   copy() {
     if (isUndefined(selectedIndex.value)) return
     const path = list.value[selectedIndex.value].path
@@ -577,10 +610,6 @@ const menuActions = reactive({
     if (isUndefined(selectedIndex.value)) return
     copyText(list.value[selectedIndex.value].path)
   },
-  quickLook() {
-    if (isUndefined(selectedIndex.value)) return
-    previewDrawer.value = true
-  },
   moveToTrash() {
     if (isUndefined(selectedIndex.value)) return
     trashFile(list.value[selectedIndex.value].path)
@@ -593,9 +622,9 @@ const debouncedSearch = debounce(() => search(query.value), 500, {
   trailing: false
 })
 
-const hotkeysScope = useHotkeysScope(ScopeName.HOME)
+const { setScope, isCurrentScope } = useHotkeysScope(ScopeName.HOME)
 onActivated(() => {
-  hotkeysScope.setScope()
+  setScope()
 })
 
 useHotkeys(
@@ -642,14 +671,14 @@ useHotkeys(
 useHotkeys('command+f', () => focusInput(), { scope: ScopeName.HOME })
 
 onStartTyping(() => {
-  if (hotkeysScope.isCurrentScope()) {
+  if (isCurrentScope.value) {
     focusInput()
   }
 })
 
 onKeyDown(['Meta', 'Shift', '[', ']'], (e) => {
   e.preventDefault()
-  if (!hotkeysScope.isCurrentScope()) return
+  if (!isCurrentScope.value) return
 
   const len = settingStore.enabledKindFilters.length
   // ⇧ ⌘ ]
@@ -665,17 +694,8 @@ onKeyDown(['Meta', 'Shift', '[', ']'], (e) => {
 })
 
 const fileListRef = ref<ComponentRef<typeof FileList>>(null)
-onKeyDown(['Meta', 'ArrowDown', 'ArrowUp'], (e) => {
-  if (!hotkeysScope.isCurrentScope()) return
-
-  if (e.metaKey && e.key === 'ArrowUp') {
-    fileListRef.value?.scrollTo(0)
-  } else if (e.metaKey && e.key === 'ArrowDown') {
-    fileListRef.value?.scrollTo(list.value.length - 1)
-  }
-})
 onKeyDown(['Meta', '1', '2', '3', '4', '5', '6', '7', '8', '9'], (e) => {
-  if (!hotkeysScope.isCurrentScope()) return
+  if (!isCurrentScope.value) return
 
   if (e.metaKey) {
     // 对齐窗口的数据项
@@ -690,11 +710,18 @@ onKeyDown(['Meta', '1', '2', '3', '4', '5', '6', '7', '8', '9'], (e) => {
 })
 
 const isShowListShortcuts = ref(false)
+const windowFocus = useWindowFocus()
 useKeyLongPress(
   ['Meta'],
-  () => hotkeysScope.isCurrentScope() && (isShowListShortcuts.value = true),
+  () => {
+    if (!isCurrentScope.value) return
+    // 只有窗口获得焦点才显示
+    if (windowFocus.value) {
+      isShowListShortcuts.value = true
+    }
+  },
   (e) => {
-    if (!hotkeysScope.isCurrentScope()) return
+    if (!isCurrentScope.value) return
     // 切换左右 ⌘ 键时不隐藏
     if (!e.metaKey) {
       isShowListShortcuts.value = false
@@ -702,6 +729,13 @@ useKeyLongPress(
   },
   700
 )
+
+watch(windowFocus, () => {
+  // 窗口失去焦点
+  if (!windowFocus.value) {
+    isShowListShortcuts.value = false
+  }
+})
 
 async function init(code: string, type: ActionType, payload: Payload) {
   switch (type) {
@@ -727,6 +761,47 @@ async function init(code: string, type: ActionType, payload: Payload) {
   }
 }
 
+const qlWin = createBrowserWindow('quicklook.html', {
+  width: 0,
+  height: 0,
+  x: 1200,
+  y: 80,
+  show: false,
+  autoHideMenuBar: true,
+  webPreferences: {
+    devTools: true
+  }
+})
+
+function quickLook() {
+  if (fileInfo.value) {
+    qlWin.show()
+    qlWin.closeFilePreview()
+    qlWin.previewFile(fileInfo.value.path, fileInfo.value.name)
+    showMainWindow()
+  }
+}
+
+onKeyDown(['Control'], (e) => {
+  if (!isCurrentScope.value) return
+  if (e.key === 'Control') {
+    quickLook()
+  }
+})
+useHotkeys(
+  'Space',
+  (e) => {
+    if ((e.target as HTMLElement).tagName === 'INPUT') return
+    e.preventDefault()
+    quickLook()
+  },
+  { scope: ScopeName.HOME }
+)
+
+onBeforeUnmount(() => {
+  qlWin.destroy()
+})
+
 onPluginEnter(async ({ code, type, payload }) => {
   // 更新搜索范围
   commonStore.refreshDefaultSearchScopes()
@@ -744,8 +819,6 @@ onPluginEnter(async ({ code, type, payload }) => {
   }
 })
 onPluginOut(() => {
-  isShowListShortcuts.value = false
-
   if (isFindInTempScope.value) {
     query.value = ''
     tempDirectory.value = ''
@@ -753,6 +826,7 @@ onPluginOut(() => {
   } else {
     killFind()
   }
+  qlWin.hide()
 })
 </script>
 

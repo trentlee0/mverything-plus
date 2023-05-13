@@ -11,6 +11,10 @@ export namespace FileConstant {
   export const KB = 1000
   export const MB = KB * 1000
   export const GB = MB * 1000
+
+  export const KiB = 1 << 10
+  export const MiB = 1 << 20
+  export const GiB = 1 << 30
 }
 
 export namespace ContentType {

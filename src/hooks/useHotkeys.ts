@@ -1,5 +1,5 @@
 import hotkeys, { KeyHandler } from 'hotkeys-js'
-import { onBeforeMount, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
 
 type Options = {
   scope?: string
@@ -12,6 +12,7 @@ type Options = {
 
 // 关闭过滤
 hotkeys.filter = (e) => true
+
 export function useHotkeys(key: string, method: KeyHandler, options?: Options) {
   if (options) {
     onBeforeMount(() => hotkeys(key, options, method))
@@ -21,15 +22,20 @@ export function useHotkeys(key: string, method: KeyHandler, options?: Options) {
   onBeforeUnmount(() => hotkeys.unbind(key))
 }
 
+const currentScope = ref('all')
+
 export function useHotkeysScope(scopeName: string) {
   onBeforeUnmount(() => hotkeys.deleteScope(scopeName))
+  const isCurrentScope = computed(
+    () => currentScope.value === 'all' || currentScope.value === scopeName
+  )
 
   return {
     setScope() {
       hotkeys.setScope(scopeName)
+      currentScope.value = scopeName
     },
-    isCurrentScope() {
-      return hotkeys.getScope() === scopeName
-    }
+    currentScope,
+    isCurrentScope
   }
 }

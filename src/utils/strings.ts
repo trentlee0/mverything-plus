@@ -7,7 +7,10 @@ export function formatDatetime(datetime: string) {
 }
 
 export function normalDecimal(num: number) {
-  return num.toFixed(2)
+  const fraction = num % 1
+  if (fraction < 0.1) return Math.floor(num).toString()
+  if (fraction > 0.9) return Math.ceil(num).toString()
+  return num.toFixed(1)
 }
 
 export function handleBytesToHuman(byteSize: number) {
@@ -16,7 +19,7 @@ export function handleBytesToHuman(byteSize: number) {
   if (byteSize > FileConstant.MB)
     return normalDecimal(byteSize / FileConstant.MB) + ' MB'
   if (byteSize > FileConstant.KB)
-    return normalDecimal(byteSize / FileConstant.KB) + ' KB'
+    return normalDecimal(Math.round(byteSize / FileConstant.KB)) + ' KB'
   if (byteSize >= 0) return byteSize + ' B'
   return ''
 }
