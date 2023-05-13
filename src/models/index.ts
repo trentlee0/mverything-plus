@@ -21,14 +21,14 @@ export interface FindFileMetadata extends PrimaryFileMetadata {
 }
 
 export interface ExtraFileMetadata {
-  contentCreationDate: Date
+  contentCreationDate?: Date
   contentModificationDate?: Date
-  contentType: string
-  contentTypeTree: string[]
-  fsName: string
+  contentType?: string
+  contentTypeTree?: string[]
+  fsName?: string
   fsNodeCount?: number
-  fsSize: number
-  kind: string
+  fsSize?: number
+  kind?: string
   lastUsedDate?: Date
   pixelHeight?: number
   pixelWidth?: number
@@ -58,6 +58,8 @@ export interface PreviewFileInfo extends BaseFileInfo {
   pixelWidth?: number
   pixelHeight?: number
   fileText?: string
+  readTextSize?: number
+  textEncoding?: string
   files?: Array<SimpleFileInfo>
 }
 

@@ -13,6 +13,7 @@ import mdfind from 'mdfind'
 import { fileMetadata } from 'file-metadata'
 import chardet from 'chardet'
 import iconv from 'iconv-lite'
+import { FileConstant } from '@/constant'
 
 let terminateFunc: Nullable<() => boolean> = null
 
@@ -77,20 +78,35 @@ export function trashFile(filePath: string) {
   shell.trashItem(filePath)
 }
 
-export function readFilePartText(filePath: string): Promise<string> {
+export function readFilePartText(filePath: string): Promise<{
+  text: string
+  encoding: string
+  partialSize: number
+  size: number
+}> {
   return new Promise((resolve, reject) => {
-    const stream = createReadStream(filePath, { flags: 'r' })
+    const st = lstatSync(filePath)
+    const stream = createReadStream(filePath, {
+      flags: 'r',
+      highWaterMark: 128 * FileConstant.KB,
+      start: 0
+    })
       .on('data', (data) => {
-        const res = Buffer.from(data)
         stream.close()
-        const encode = chardet.detect(res)
-        if (encode) {
-          resolve(iconv.decode(res, encode))
+        const res = data as Buffer
+        const encoding = chardet.detect(res)
+        if (encoding !== null) {
+          resolve({
+            text: iconv.decode(res, encoding),
+            encoding,
+            partialSize: res.byteLength,
+            size: st.size
+          })
         } else {
-          throw new Error('encode: ' + encode)
+          throw new Error('The encoding of the detected file is null! File: ' + filePath)
         }
       })
-      .on('error', (err) => reject(err))
+      .on('error', reject)
   })
 }
 

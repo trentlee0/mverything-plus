@@ -18,12 +18,19 @@
         :text="item.fileText"
         font-size="12px"
         :loading="loading"
+        :size="item.size ?? 0"
+        :partial-size="
+          (item.readTextSize ?? 0) < (item.size ?? 0)
+            ? item.readTextSize
+            : undefined
+        "
+        :encoding="item.textEncoding"
       ></TextViewer>
       <div
         v-else-if="item.previewType === FilePreviewType.PICTURE"
         class="tw-flex tw-h-full tw-w-full tw-justify-center tw-px-1"
       >
-        <v-img :src="`file://${item.path}`" />
+        <v-img :src="`file://${item.path}`" transition="" />
       </div>
       <div
         v-else-if="item.previewType === FilePreviewType.AUDIO"
@@ -39,7 +46,7 @@
       </div>
       <div
         v-else-if="item.previewType === FilePreviewType.VIDEO"
-        class="tw-flex tw-h-full tw-items-center tw-justify-center tw-px-1"
+        class="tw-flex tw-h-full tw-w-full tw-items-center tw-justify-center tw-bg-black tw-px-1"
       >
         <video
           ref="videoPlayer"
@@ -53,10 +60,8 @@
       <FileThumbnail v-else :src="item.thumbnail"></FileThumbnail>
     </div>
 
-    <div class="tw-h-px tw-bg-neutral-100 dark:tw-bg-neutral-700" />
-
     <div
-      :style="{ height: `calc(${isPreview ? '45%' : '50%'} - 1px)` }"
+      :style="{ height: `calc(${isPreview ? '45%' : '50%'})` }"
       class="tw-overflow-y-scroll"
     >
       <v-card-text class="tw-text-base">
@@ -102,7 +107,7 @@
           label="项目数"
           :text="item.itemCount ?? 0"
         />
-        <FormItem label="种类" :text="item?.kind" :title="item.type" />
+        <FormItem label="种类" :text="item?.kind" />
         <FormItem
           v-if="item.createDate"
           label="创建时间"
@@ -123,7 +128,7 @@
           label="尺寸"
           :text="`${item.pixelWidth}×${item.pixelWidth}`"
         />
-        <FormItem label="类型树">
+        <FormItem label="类型树" v-show="item.typeTree.length">
           <template #default>
             <div
               v-for="typeItem in item.typeTree"
@@ -148,8 +153,8 @@ import TextViewer from './TextViewer.vue'
 import { PreviewFileInfo } from '@/models'
 import { formatDatetime, handleBytesToHuman } from '@/utils/strings'
 import { FilePreviewType } from '@/constant'
-import { copyText } from 'utools-api'
-import { ref } from 'vue'
+import { copyText, createBrowserWindow } from 'utools-api'
+import { onMounted, ref } from 'vue'
 import { isNull } from 'lodash'
 
 withDefaults(
