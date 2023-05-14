@@ -1,10 +1,5 @@
 <template>
-  <v-item-group
-    class="item-group"
-    :model-value="modelValue"
-    mandatory
-    @update:model-value="emit('update:modelValue', $event)"
-  >
+  <v-item-group class="item-group" v-model="modelValue" mandatory>
     <div class="tw-flex">
       <div v-for="item in items">
         <v-item :value="item.value">
@@ -31,13 +26,10 @@ interface DisplayModeItem {
   icon: string
 }
 
-defineProps<{
-  modelValue: string | number
-  items: Array<DisplayModeItem>
-}>()
+const modelValue = defineModel<string | number>({ required: true })
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: string | number): void
+defineProps<{
+  items: Array<DisplayModeItem>
 }>()
 </script>
 

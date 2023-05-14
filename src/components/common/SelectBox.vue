@@ -7,47 +7,44 @@
   >
     <option
       v-for="item in items"
-      :key="get(item, itemValue!)"
-      :value="get(item, itemValue!)"
+      :key="getProp(item, itemValue)"
+      :value="getProp(item, itemValue)"
     >
-      {{ get(item, itemLabel) }}
+      {{ getProp(item, itemLabel) }}
     </option>
   </select>
 </template>
 
 <script setup lang="ts">
-const props = withDefaults(
-  defineProps<{
-    modelValue: any
-    itemLabel?: string
-    itemValue?: string
-    items: Array<object>
-  }>(),
-  {
-    itemLabel: 'label',
-    itemValue: 'value'
-  }
-)
+import { toMap } from '@/utils/collections'
 
-const map = new Map<any, object>()
-props.items.forEach((item) => {
-  map.set(get(item, props.itemValue), item)
-})
+const modelValue = defineModel<string | number>()
 
-function get(o: object, prop: string) {
+const {
+  itemLabel = 'label',
+  itemValue = 'value',
+  items
+} = defineProps<{
+  itemLabel?: string
+  itemValue?: string
+  items: Array<object>
+}>()
+
+const map = toMap<any, object>(items, (item) => getProp(item, itemValue))
+
+function getProp(o: object, prop: string) {
   return Reflect.get(o, prop)
 }
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: number | string): void
-  (e: 'select', item?: object): void
+  select: [item?: object]
 }>()
 function handleInputEvent(e: Event) {
   const value = (e.target as HTMLSelectElement).value
-  if (typeof props.modelValue === 'number') {
-    emit('update:modelValue', parseInt(value))
+  if (typeof modelValue.value === 'number') {
+    modelValue.value = parseInt(value)
   } else {
-    emit('update:modelValue', value)
+    modelValue.value = value
   }
   emit('select', map.get(value))
 }

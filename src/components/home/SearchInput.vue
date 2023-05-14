@@ -15,9 +15,8 @@
         ref="inputRef"
         class="tw-outline-none"
         type="text"
-        :value="modelValue"
+        v-model="modelValue"
         autofocus
-        @input="handleInput"
         :placeholder="placeholder"
         @focus="handleFocus"
         @blur="handleBlur"
@@ -29,9 +28,10 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 
+const modelValue = defineModel<string>({ required: true })
+
 withDefaults(
   defineProps<{
-    modelValue: string
     width?: string
     height?: string
     placeholder?: string
@@ -47,20 +47,12 @@ const isInputFocus = ref(false)
 
 const inputRef = ref<ElementRef<HTMLInputElement>>(null)
 
-const emit = defineEmits<{
-  (e: 'update:modelValue', val: string): void
-}>()
-
 function handleFocus() {
   isInputFocus.value = true
 }
 
 function handleBlur() {
   isInputFocus.value = false
-}
-
-function handleInput(e: Event) {
-  emit('update:modelValue', (e.target as HTMLInputElement).value)
 }
 
 function focus() {

@@ -13,7 +13,12 @@ export default defineConfig({
     }
   },
   plugins: [
-    vue(),
+    vue({
+      script: {
+        defineModel: true,
+        propsDestructure: true
+      }
+    }),
     utools({
       external: 'utools-api',
       preload: {

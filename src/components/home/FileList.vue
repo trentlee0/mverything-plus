@@ -112,15 +112,15 @@ function getIcon(item: BaseFileInfo) {
 const maxIndexInWindow = computed(() => props.displaySize - 1)
 
 const emit = defineEmits<{
-  (e: 'update:selectedIndex', index: number): void
-  (e: 'openItem'): void
-  (e: 'openItemInFinder'): void
-  (e: 'showItemInfo'): void
-  (e: 'quickLookItem'): void
-  (e: 'copyItem'): void
-  (e: 'copyItemName'): void
-  (e: 'copyItemPath'): void
-  (e: 'moveItemToTrash'): void
+  'update:selectedIndex': [index: number]
+  openItem: []
+  openItemInFinder: []
+  showItemInfo: []
+  quickLookItem: []
+  copyItem: []
+  copyItemName: []
+  copyItemPath: []
+  moveItemToTrash: []
 }>()
 
 const contextActions = reactive({

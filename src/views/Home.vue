@@ -100,7 +100,7 @@
     <v-row no-gutters style="height: 45px" align="center">
       <v-col class="tw-flex tw-items-center">
         <Hover class="tw-ml-5">
-          <div class="tw-px-3 tw-py-1" @click="$router.push('/setting')">
+          <div class="tw-px-3 tw-py-1" @click="router.push('/setting')">
             <v-icon size="default">{{ mdiCogOutline }}</v-icon>
           </div>
         </Hover>
@@ -236,7 +236,9 @@ import {
   readCurrentFolderPath,
   createBrowserWindow,
   showMainWindow,
-  hideMainWindow
+  ActionType,
+  FilesPayload,
+  Payload
 } from 'utools-api'
 import emptyImg from '@/assets/empty_inbox.svg'
 import { buildQuery, getPlainSearchText, splitKeyword } from '@/utils/query'
@@ -246,11 +248,12 @@ import { useKeyLongPress } from '@/hooks/useKeyLongPress'
 import { toRef } from 'vue'
 import { ContentType } from '@/constant'
 import { BaseFileInfo, KindFilterModel, PreviewFileInfo } from '@/models'
-import { ActionType, FilesPayload, Payload } from '@/typings/utools'
 import { useToast } from 'vue-toastification'
+import { useRouter } from 'vue-router'
 
 const toast = useToast()
 
+const router = useRouter()
 const commonStore = useCommonStore()
 const settingStore = useSettingStore()
 

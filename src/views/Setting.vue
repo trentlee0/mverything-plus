@@ -3,7 +3,7 @@
     <Header>
       <v-btn
         :icon="mdiClose"
-        @click="$router.replace('/')"
+        @click="router.replace('/')"
         size="46"
         color="transparent"
         :elevation="0"
@@ -46,7 +46,9 @@ import { ref } from 'vue'
 import { useHotkeysScope } from '@/hooks/useHotkeys'
 import { ScopeName } from '@/constant'
 import { onActivated } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const tab = ref<'general' | 'filter' | 'preview' | 'about'>('general')
 
 const { setScope } = useHotkeysScope(ScopeName.SETTING)

@@ -6,23 +6,23 @@
     <input
       class="tw-h-full tw-w-full tw-accent-blue-500 tw-outline-none"
       type="checkbox"
-      :checked="modelValue"
+      v-model="modelValue"
       :hidden="!modelValue"
-      @input="emits('input', $event)"
+      @input="emit('input', $event)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-withDefaults(defineProps<{ modelValue?: boolean }>(), {
-  modelValue: false
-})
+const modelValue = defineModel()
 
-const emits = defineEmits(['update:value', 'input'])
-
-const handleClickEvent = (e: any) => {
-  emits('update:value', e.target.checked)
+function handleClickEvent(e: Event) {
+  modelValue.value = (e.target as HTMLInputElement).checked
 }
+
+const emit = defineEmits<{
+  input: [e: Event]
+}>()
 </script>
 
 <style lang="scss" scoped></style>

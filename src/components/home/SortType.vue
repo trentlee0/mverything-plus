@@ -1,10 +1,7 @@
 <template>
   <div
     @click="
-      emit(
-        'update:modelValue',
-        modelValue === SortTypeEnum.ASC ? SortTypeEnum.DESC : SortTypeEnum.ASC
-      )
+      modelValue === SortTypeEnum.ASC ? SortTypeEnum.DESC : SortTypeEnum.ASC
     "
   >
     <v-icon size="default" v-show="modelValue === SortTypeEnum.ASC">
@@ -20,13 +17,7 @@
 import { SortTypeEnum } from '@/constant'
 import { mdiSortDescending, mdiSortAscending } from '@mdi/js'
 
-defineProps<{
-  modelValue: SortTypeEnum
-}>()
-
-const emit = defineEmits<{
-  (e: 'update:modelValue', value: SortTypeEnum): void
-}>()
+const modelValue = defineModel<SortTypeEnum>({ required: true })
 </script>
 
 <style lang="scss" scoped></style>
