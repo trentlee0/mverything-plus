@@ -107,7 +107,7 @@
           label="项目数"
           :text="item.itemCount ?? 0"
         />
-        <FormItem label="种类" :text="item?.kind" />
+        <FormItem label="种类" :text="item?.kind" :title="item?.type"/>
         <FormItem
           v-if="item.createDate"
           label="创建时间"
@@ -153,8 +153,8 @@ import TextViewer from './TextViewer.vue'
 import { PreviewFileInfo } from '@/models'
 import { formatDatetime, handleBytesToHuman } from '@/utils/strings'
 import { FilePreviewType } from '@/constant'
-import { copyText, createBrowserWindow } from 'utools-api'
-import { onMounted, ref } from 'vue'
+import { copyText } from 'utools-api'
+import { ref } from 'vue'
 import { isNull } from 'lodash'
 
 withDefaults(

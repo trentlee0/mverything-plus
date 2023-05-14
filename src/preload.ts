@@ -14,6 +14,8 @@ import { fileMetadata } from 'file-metadata'
 import chardet from 'chardet'
 import iconv from 'iconv-lite'
 import { FileConstant } from '@/constant'
+import { execAppleScript } from 'utools-utils'
+import { hideMainWindow } from 'utools-api'
 
 let terminateFunc: Nullable<() => boolean> = null
 
@@ -103,7 +105,9 @@ export function readFilePartText(filePath: string): Promise<{
             size: st.size
           })
         } else {
-          throw new Error('The encoding of the detected file is null! File: ' + filePath)
+          throw new Error(
+            'The encoding of the detected file is null! File: ' + filePath
+          )
         }
       })
       .on('error', reject)
@@ -148,4 +152,14 @@ export function getVolumes(): { name: string; path: string }[] {
   return readdirSync('/Volumes')
     .filter((item) => item !== 'Macintosh HD')
     .map((name) => ({ name, path: path.join('/Volumes', name) }))
+}
+
+export async function openInfoWindow(path: string) {
+  hideMainWindow()
+  const script = `
+    tell application "Finder"
+        open information window of ((POSIX file "${path}") as alias)
+        activate information window
+    end tell`
+  await execAppleScript(script)
 }

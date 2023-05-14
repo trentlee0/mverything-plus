@@ -65,11 +65,7 @@
     </template>
   </v-virtual-scroll>
 
-  <FinderMenu
-    ref="finderMenuRef"
-    :actions="contextActions"
-    :show-detail="listMode"
-  ></FinderMenu>
+  <FinderMenu ref="finderMenuRef" :actions="contextActions"></FinderMenu>
 </template>
 
 <script lang="ts" setup>
@@ -119,7 +115,7 @@ const emit = defineEmits<{
   (e: 'update:selectedIndex', index: number): void
   (e: 'openItem'): void
   (e: 'openItemInFinder'): void
-  (e: 'showItemDetail'): void
+  (e: 'showItemInfo'): void
   (e: 'quickLookItem'): void
   (e: 'copyItem'): void
   (e: 'copyItemName'): void
@@ -130,7 +126,7 @@ const emit = defineEmits<{
 const contextActions = reactive({
   open: () => emit('openItem'),
   openInFinder: () => emit('openItemInFinder'),
-  showDetail: () => emit('showItemDetail'),
+  showInfo: () => emit('showItemInfo'),
   quickLook: () => emit('quickLookItem'),
   copy: () => emit('copyItem'),
   copyName: () => emit('copyItemName'),

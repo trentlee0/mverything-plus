@@ -2,17 +2,13 @@
   <context-menu v-model:show="showMenu" :options="contextOptions">
     <context-menu-item label="打开" @click="actions.open" />
     <context-menu-item label="在访达中显示" @click="actions.openInFinder" />
-    <context-menu-item
-      v-show="showDetail"
-      label="显示详情"
-      @click="actions.showDetail"
-    />
+    <context-menu-sperator />
+    <context-menu-item label="显示简介" @click="actions.showInfo" />
     <context-menu-item label="快速查看" @click="actions.quickLook" />
     <context-menu-sperator />
     <context-menu-item label="拷贝" @click="actions.copy" />
     <context-menu-item label="拷贝名称" @click="actions.copyName" />
     <context-menu-item label="拷贝路径" @click="actions.copyPath" />
-
     <context-menu-sperator />
     <context-menu-item label="移到废纸篓" @click="actions.moveToTrash" />
   </context-menu>
@@ -25,7 +21,7 @@ import { ref } from 'vue'
 type ActionKey =
   | 'open'
   | 'openInFinder'
-  | 'showDetail'
+  | 'showInfo'
   | 'quickLook'
   | 'copy'
   | 'copyName'
@@ -33,7 +29,6 @@ type ActionKey =
   | 'moveToTrash'
 defineProps<{
   actions: Partial<Record<ActionKey, () => void>>
-  showDetail?: boolean
 }>()
 
 const { isDark } = useDark()

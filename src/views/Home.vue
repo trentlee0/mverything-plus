@@ -26,7 +26,7 @@
         </SearchInput>
       </div>
       <div class="tw-w-10"></div>
-      <v-tabs v-model="searchKind" density="compact" show-arrows>
+      <v-tabs v-model="searchKind" density="compact" show-arrows center-active>
         <v-tab
           v-for="kind in settingStore.enabledKindFilters"
           :key="kind.id"
@@ -62,7 +62,7 @@
             @update:selected-index="handleSelect"
             @open-item="menuActions.open"
             @open-item-in-finder="menuActions.openInFinder"
-            @show-item-detail="menuActions.showDetail"
+            @show-item-info="menuActions.showInfo"
             @quick-look-item="menuActions.quickLook"
             @copy-item="menuActions.copy"
             @copy-item-name="menuActions.copyName"
@@ -222,7 +222,8 @@ import {
   killFind,
   readFileList,
   readFilePartText,
-  trashFile
+  trashFile,
+  openInfoWindow
 } from '@/preload'
 import {
   shellShowItemInFolder,
@@ -234,7 +235,8 @@ import {
   getFileIcon,
   readCurrentFolderPath,
   createBrowserWindow,
-  showMainWindow
+  showMainWindow,
+  hideMainWindow
 } from 'utools-api'
 import emptyImg from '@/assets/empty_inbox.svg'
 import { buildQuery, getPlainSearchText, splitKeyword } from '@/utils/query'
@@ -572,6 +574,10 @@ function focusInput() {
   searchInputRef.value?.focus()
 }
 
+function isFocusInput() {
+  return searchInputRef.value?.isFocus()
+}
+
 function blurInput() {
   searchInputRef.value?.blur()
 }
@@ -589,9 +595,9 @@ const menuActions = reactive({
     if (isUndefined(selectedIndex.value)) return
     shellShowItemInFolder(list.value[selectedIndex.value].path)
   },
-  showDetail() {
+  showInfo() {
     if (isUndefined(selectedIndex.value)) return
-    previewDrawer.value = true
+    openInfoWindow(list.value[selectedIndex.value].path)
   },
   quickLook() {
     if (isUndefined(selectedIndex.value)) return
@@ -651,6 +657,7 @@ useHotkeys(
 useHotkeys('command+enter', () => menuActions.openInFinder(), {
   scope: ScopeName.HOME
 })
+useHotkeys('command+i', () => menuActions.showInfo(), { scope: ScopeName.HOME })
 useHotkeys('command+o', () => menuActions.open(), { scope: ScopeName.HOME })
 useHotkeys('command+c', () => menuActions.copy(), { scope: ScopeName.HOME })
 useHotkeys('command+shift+c', () => menuActions.copyName(), {
@@ -774,20 +781,14 @@ const qlWin = createBrowserWindow('quicklook.html', {
 })
 
 function quickLook() {
-  if (fileInfo.value) {
-    qlWin.show()
-    qlWin.closeFilePreview()
-    qlWin.previewFile(fileInfo.value.path, fileInfo.value.name)
-    showMainWindow()
-  }
+  if (!fileInfo.value) return
+
+  qlWin.show()
+  qlWin.closeFilePreview()
+  qlWin.previewFile(fileInfo.value.path, fileInfo.value.name)
+  showMainWindow()
 }
 
-onKeyDown(['Control'], (e) => {
-  if (!isCurrentScope.value) return
-  if (e.key === 'Control') {
-    quickLook()
-  }
-})
 useHotkeys(
   'Space',
   (e) => {
