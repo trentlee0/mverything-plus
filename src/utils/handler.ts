@@ -1,6 +1,6 @@
 import { SortTypeEnum } from '@/constant'
 import * as icons from './icons'
-import { escapeRegExp, isNull } from 'lodash'
+import { isNull } from 'lodash'
 import { BaseFileInfo, FindFileMetadata } from '@/models'
 
 /**
@@ -69,14 +69,17 @@ export function sortFileInfos(
  * 高亮文件 Model 数组中的文件名
  */
 export function highlightFileInfos(
-  word: string,
+  searchRegExp: RegExp,
   data: Array<BaseFileInfo>,
   highlightStyle: string
 ) {
   const preTag = `<span style="${highlightStyle}">`
-  const re = new RegExp(escapeRegExp(word), 'ig')
   return data.map((item) => {
-    item.nameHighlight = item.name.replaceAll(re, (s) => preTag + s + `</span>`)
+    const { name } = item
+    item.nameHighlight = name.replaceAll(
+      searchRegExp,
+      (s) => preTag + s + `</span>`
+    )
     return item
   })
 }

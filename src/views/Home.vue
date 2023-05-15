@@ -241,7 +241,7 @@ import {
   Payload
 } from 'utools-api'
 import emptyImg from '@/assets/empty_inbox.svg'
-import { buildQuery, getPlainSearchText, splitKeyword } from '@/utils/query'
+import { buildQuery, getSearchRegExp, splitKeyword } from '@/utils/query'
 import { copyFromPath } from '@/utils/common'
 import { useHotkeysScope, useHotkeys } from '@/hooks/useHotkeys'
 import { useKeyLongPress } from '@/hooks/useKeyLongPress'
@@ -530,13 +530,13 @@ function search(query: string) {
     }
     const newList = sortList()
 
-    let word: string
+    let re: RegExp
     if (
       settingStore.nameHighlight.enabled &&
-      (word = getPlainSearchText(searchText))
+      (re = getSearchRegExp(searchText))
     ) {
       refreshList(
-        highlightFileInfos(word, newList, settingStore.nameHighlight.style)
+        highlightFileInfos(re, newList, settingStore.nameHighlight.style)
       )
     } else {
       refreshList(newList)
@@ -687,17 +687,18 @@ onStartTyping(() => {
 })
 
 onKeyDown(['Meta', 'Shift', '[', ']'], (e) => {
-  e.preventDefault()
   if (!isCurrentScope.value) return
 
   const len = settingStore.enabledKindFilters.length
   // ⇧ ⌘ ]
   if (e.key === ']' && e.metaKey && e.shiftKey) {
+    e.preventDefault()
     const index = (searchKindIndex.value + 1) % len
     searchKind.value = settingStore.enabledKindFilters[index]
   }
   // ⇧ ⌘ [
   else if (e.key === '[' && e.metaKey && e.shiftKey) {
+    e.preventDefault()
     const index = (searchKindIndex.value - 1 + len) % len
     searchKind.value = settingStore.enabledKindFilters[index]
   }

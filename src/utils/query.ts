@@ -1,6 +1,7 @@
 import { ContentType } from '@/constant'
 import { SimpleFilterEnum } from '@/constant'
 import { KindFilterModel } from '@/models'
+import { escapeRegExp } from 'lodash'
 
 type BuildQueryFn = (builder: QueryBuilder) => QueryBuilder
 
@@ -145,28 +146,22 @@ export function getSimpleFilter(searchText: string) {
   return SimpleFilterEnum.NONE
 }
 
-enum KindSymbol {
-  INCLUDE,
-  EXCLUDE
-}
 function parseKindExpression(kindExp: string) {
   const includes: string[] = []
   const excludes: string[] = []
-  let symbol = KindSymbol.INCLUDE
+  // include 0, exclude 1
+  let symbol: 0 | 1 = 0
   let kind = ''
   const addKind = () => {
     if (!kind) return
-    if (symbol === KindSymbol.EXCLUDE) excludes.push(kind)
+    if (symbol === 1) excludes.push(kind)
     else includes.push(kind)
     kind = ''
   }
   for (const ch of kindExp) {
-    if (ch === '!') {
+    if (ch === '!' || ch === '|') {
       addKind()
-      symbol = KindSymbol.EXCLUDE
-    } else if (ch === '|') {
-      addKind()
-      symbol = KindSymbol.INCLUDE
+      symbol = ch === '!' ? 1 : 0
     } else {
       kind += ch
     }
@@ -195,10 +190,14 @@ function parseQuoteContent(s: string) {
   )
 }
 
+function splitSearchText(searchText: string) {
+  return searchText.split(/ +/)
+}
+
 /**
- * 获取清除后的搜索文本
+ * 获取搜索匹配正则
  */
-export function getPlainSearchText(searchText: string) {
+export function getSearchRegExp(searchText: string) {
   searchText = searchText.trim()
   const quoteContent = parseQuoteContent(searchText)
   if (quoteContent) {
@@ -209,11 +208,57 @@ export function getPlainSearchText(searchText: string) {
   let r = n - 1
   while (l < n && searchText.charAt(l) === '*') l++
   while (r > l && searchText.charAt(r) === '*') r--
-  return searchText.substring(l, r + 1)
+
+  const words = splitSearchText(searchText.substring(l, r + 1))
+  const locales = [
+    [`“`, `”`, '"'],
+    [`‘`, `’`, `'`, '`'],
+    [`？`, '?'],
+    [`：`, ':'],
+    [`！`, '!'],
+    [`（`, '('],
+    [`）`, ')'],
+    [`，`, ','],
+    [`；`, ';'],
+    [`｜`, '|'],
+    [`＋`, '+']
+  ]
+  return new RegExp(
+    words
+      .map((word) => {
+        let ans = ''
+        let locale: string[] | undefined = undefined
+        for (let i = 0; i < word.length; i++) {
+          const ch = word[i]
+
+          if (ch === '-') {
+            ans += `[-]?`
+          } else if ((locale = locales.find((item) => item.includes(ch)))) {
+            ans += `[${locale.join('')}]`
+          } else if (
+            i === word.length - 1 ||
+            i === 0 ||
+            ch === '.' ||
+            ch === '?'
+          ) {
+            ans += escapeRegExp(ch)
+          } else {
+            ans += `[${ch}.-]{1,2}`
+          }
+        }
+        return `(${ans})`
+      })
+      .join('|'),
+    'ig'
+  )
 }
 
 /**
  * 构建 mdfind 查询表达式
+ *
+ * 参考文档：
+ * - https://ss64.com/osx/mdfind.html
+ * - https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/SpotlightQuery/Concepts/QueryFormat.html
  */
 export function buildQuery(
   searchText: string,
@@ -256,7 +301,10 @@ export function buildQuery(
           b.eq(true, 'kMDItemFSName', quoteContent, true)
         } else {
           // 默认为模糊匹配
-          b.like(true, 'kMDItemFSName', searchText)
+          const words = splitSearchText(searchText)
+          for (const word of words) {
+            b.like(true, 'kMDItemFSName', word)
+          }
         }
       }
       return b.or((b2) =>
