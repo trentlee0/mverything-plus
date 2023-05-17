@@ -21,7 +21,7 @@
     "mdfind": "^1.0.0",
     "nanoid": "^4.0.2",
     "pinia": "^2.0.36",
-    "utools-utils": "^1.0.1",
+    "utools-utils": "^1.0.2",
     "vue": "^3.3.2",
     "vue-draggable-next": "^2.1.1",
     "vue-router": "^4.2.0",

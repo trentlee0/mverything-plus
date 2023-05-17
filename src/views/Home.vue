@@ -236,6 +236,7 @@ import {
   readCurrentFolderPath,
   createBrowserWindow,
   showMainWindow,
+  Action,
   ActionType,
   FilesPayload,
   Payload
@@ -750,11 +751,11 @@ watch(windowFocus, () => {
 
 async function init(code: string, type: ActionType, payload: Payload) {
   switch (type) {
-    case ActionType.FILES:
+    case 'files':
       const files = payload as FilesPayload
       tempDirectory.value = files[0].path
       break
-    case ActionType.WINDOW:
+    case 'window':
       try {
         tempDirectory.value = await readCurrentFolderPath()
       } catch (err) {
@@ -762,11 +763,11 @@ async function init(code: string, type: ActionType, payload: Payload) {
         tempDirectory.value = getPath('desktop')
       }
       break
-    case ActionType.REGEX:
+    case 'regex':
       const dir = payload as string
       if (await existsDir(dir)) tempDirectory.value = dir
       break
-    case ActionType.OVER:
+    case 'over':
       query.value = payload as string
       break
   }
@@ -807,11 +808,12 @@ onBeforeUnmount(() => {
   qlWin.destroy()
 })
 
-onPluginEnter(async ({ code, type, payload }) => {
+onPluginEnter(async (action) => {
+  const { code, type, payload } = action as Action
   // 更新搜索范围
   commonStore.refreshDefaultSearchScopes()
 
-  await init(code, type as ActionType, payload)
+  await init(code, type, payload)
   focusInput()
   selectText()
 

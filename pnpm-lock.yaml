@@ -25,7 +25,7 @@ specifiers:
   tailwindcss: ^3.3.2
   typescript: ^5.0.4
   utools-api-types: ^3.0.0
-  utools-utils: ^1.0.1
+  utools-utils: ^1.0.2
   vite: ^4.3.5
   vite-plugin-utools: ^0.5.4
   vue: ^3.3.2
@@ -48,7 +48,7 @@ dependencies:
   mdfind: 1.0.0
   nanoid: 4.0.2
   pinia: 2.0.36_typescript@5.0.4+vue@3.3.2
-  utools-utils: 1.0.1
+  utools-utils: 1.0.2
   vue: 3.3.2
   vue-draggable-next: 2.1.1_vue@3.3.2
   vue-router: 4.2.0_vue@3.3.2
@@ -2109,8 +2109,8 @@ packages:
     resolution: {integrity: sha512-KJYytaX/cnxRTm+fBKeDAV6PhE1Emrv4bZm/6pigVhxEM4StAy8UFGyo22bVARSRIUUxbEdtWIo6O7qmEGnv5A==}
     dev: true
 
-  /utools-utils/1.0.1:
-    resolution: {integrity: sha512-dNRacyhcR4d0wLQr/XhN+oVzasY+RqufcPakJO5Pk/yaAXgmIWBXS989DgI7StdfBjJ6n0XfOr+tro/BO/87yQ==}
+  /utools-utils/1.0.2:
+    resolution: {integrity: sha512-4Gz3nOt7jWSdwZI9Jq9SLq2TnZakm7EtV3rDro+l1gkWmB3Y4hKmyQpK1Fvdqla6j5pvShmvNUNjCyqHmFe5fw==}
     dev: false
 
   /vite-plugin-utools/0.5.4:
