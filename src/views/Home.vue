@@ -531,7 +531,7 @@ function search(query: string) {
     }
     const newList = sortList()
 
-    let re: RegExp
+    let re
     if (
       settingStore.nameHighlight.enabled &&
       (re = getSearchRegExp(searchText))

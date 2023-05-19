@@ -223,7 +223,7 @@ export function getSearchRegExp(searchText: string) {
     [`｜`, '|'],
     [`＋`, '+']
   ]
-  return new RegExp(
+  const regexp = new RegExp(
     words
       .map((word) => {
         let ans = ''
@@ -251,6 +251,7 @@ export function getSearchRegExp(searchText: string) {
       .join('|'),
     'ig'
   )
+  return { regexp, words }
 }
 
 /**

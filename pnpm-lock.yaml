@@ -18,6 +18,7 @@ specifiers:
   mdfind: ^1.0.0
   nanoid: ^4.0.2
   pinia: ^2.0.36
+  pinyin-pro: ^3.14.0
   postcss: ^8.4.23
   prettier: ^2.8.8
   prettier-plugin-tailwindcss: ^0.2.8
@@ -48,6 +49,7 @@ dependencies:
   mdfind: 1.0.0
   nanoid: 4.0.2
   pinia: 2.0.36_typescript@5.0.4+vue@3.3.2
+  pinyin-pro: 3.14.0
   utools-utils: 1.0.2
   vue: 3.3.2
   vue-draggable-next: 2.1.1_vue@3.3.2
@@ -1686,6 +1688,10 @@ packages:
       typescript: 5.0.4
       vue: 3.3.2
       vue-demi: 0.14.0_vue@3.3.2
+    dev: false
+
+  /pinyin-pro/3.14.0:
+    resolution: {integrity: sha512-mbFw2Gx8IlbnxClhaACRFUWXa/lCzCttrPIdHXPzAvWOAmTKcdTFlMjbt5Quq6YY2asgD79Ml/MQpPEGN3o8iw==}
     dev: false
 
   /pirates/4.0.5:

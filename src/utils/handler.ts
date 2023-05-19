@@ -2,6 +2,7 @@ import { SortTypeEnum } from '@/constant'
 import * as icons from './icons'
 import { isNull } from 'lodash'
 import { BaseFileInfo, FindFileMetadata } from '@/models'
+import { match } from 'pinyin-pro'
 
 /**
  * 根据自定义关键字过滤，并映射到文件 Model 数组
@@ -65,11 +66,29 @@ export function sortFileInfos(
   return data.sort(compareByPropFn(fieldName, sortType))
 }
 
+function getPinyinMatch(s: string, pinyins: string[]) {
+  const mats: string[] = []
+  for (const pinyin of pinyins) {
+    let arr = match(s, pinyin)
+    if (!arr?.length) continue
+    console.log(arr)
+
+    let lastPos = arr[0]
+    for (let i = 1; i < arr.length - 1; i++) {
+      if (arr[i] - arr[i - 1] === 1) continue
+      mats.push(s.substring(lastPos, arr[i] + 1))
+      lastPos = arr[i]
+    }
+    mats.push(s.substring(lastPos, arr[arr.length - 1] + 1))
+  }
+  return mats
+}
+
 /**
  * 高亮文件 Model 数组中的文件名
  */
 export function highlightFileInfos(
-  searchRegExp: RegExp,
+  search: { regexp: RegExp; words: string[] },
   data: Array<BaseFileInfo>,
   highlightStyle: string
 ) {
@@ -77,9 +96,18 @@ export function highlightFileInfos(
   return data.map((item) => {
     const { name } = item
     item.nameHighlight = name.replaceAll(
-      searchRegExp,
+      search.regexp,
       (s) => preTag + s + `</span>`
     )
+    // 高亮未匹配
+    if (name.length === item.nameHighlight.length) {
+      const mats = getPinyinMatch(name, search.words)
+      let s = name
+      for (const mat of mats) {
+        s = s.replace(mat, preTag + mat + `</span>`)
+      }
+      item.nameHighlight = s
+    }
     return item
   })
 }
