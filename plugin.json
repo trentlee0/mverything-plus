@@ -52,6 +52,13 @@
           "exclude": "/[\\\\\\/\\t\\n]/",
           "minLength": 1,
           "maxLength": 100
+        },
+        {
+          "type": "regex",
+          "label": "文件搜索",
+          "match": "/^(f )(.*)$/",
+          "minLength": 1,
+          "maxLength": 100
         }
       ]
     }

@@ -749,30 +749,6 @@ watch(windowFocus, () => {
   }
 })
 
-async function init(code: string, type: ActionType, payload: Payload) {
-  switch (type) {
-    case 'files':
-      const files = payload as FilesPayload
-      tempDirectory.value = files[0].path
-      break
-    case 'window':
-      try {
-        tempDirectory.value = await readCurrentFolderPath()
-      } catch (err) {
-        console.error(err)
-        tempDirectory.value = getPath('desktop')
-      }
-      break
-    case 'regex':
-      const dir = payload as string
-      if (await existsDir(dir)) tempDirectory.value = dir
-      break
-    case 'over':
-      query.value = payload as string
-      break
-  }
-}
-
 const qlWin = createBrowserWindow('quicklook.html', {
   width: 0,
   height: 0,
@@ -807,6 +783,36 @@ useHotkeys(
 onBeforeUnmount(() => {
   qlWin.destroy()
 })
+
+async function init(code: string, type: ActionType, payload: Payload) {
+  switch (type) {
+    case 'files':
+      const files = payload as FilesPayload
+      tempDirectory.value = files[0].path
+      break
+    case 'window':
+      try {
+        tempDirectory.value = await readCurrentFolderPath()
+      } catch (err) {
+        console.error(err)
+        tempDirectory.value = getPath('desktop')
+      }
+      break
+    case 'regex':
+      payload = payload as string
+      if (payload.startsWith('f ')) {
+        query.value = payload.replace('f ', '')
+        search(query.value)
+      } else if (await existsDir(payload)) {
+        tempDirectory.value = payload
+      }
+      break
+    case 'over':
+      query.value = payload as string
+      search(query.value)
+      break
+  }
+}
 
 onPluginEnter(async (action) => {
   const { code, type, payload } = action as Action
