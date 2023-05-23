@@ -76,7 +76,12 @@
             :item-height="itemHeight"
           />
         </v-col>
-        <v-col class="tw-h-full" :cols="5" v-if="isPreviewMode">
+        <v-col class="tw-flex tw-h-full" :cols="5" v-if="isPreviewMode">
+          <div
+            class="tw-h-full tw-w-px tw-flex-none tw-bg-neutral-100 dark:tw-bg-neutral-950"
+            v-if="fileInfo"
+          ></div>
+
           <Preview
             :item="fileInfo"
             :is-preview="isPreviewContent"
