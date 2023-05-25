@@ -1,5 +1,5 @@
 import { defineStore, createPinia, Store } from 'pinia'
-import persistPiniaPlugin from './persist'
+import persistencePiniaPlugin from 'pinia-persistence'
 import { storage } from 'utools-utils'
 import { StoreKey } from '@/constant'
 import { DisplayModeEnum } from '@/constant'
@@ -89,5 +89,5 @@ export const useSettingStore = defineStore(StoreKey.SETTING, {
 })
 
 const pinia = createPinia()
-pinia.use(persistPiniaPlugin)
+pinia.use(persistencePiniaPlugin)
 export default pinia

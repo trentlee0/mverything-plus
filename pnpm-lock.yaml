@@ -18,6 +18,7 @@ specifiers:
   mdfind: ^1.0.0
   nanoid: ^4.0.2
   pinia: ^2.0.36
+  pinia-persistence: ^1.0.0
   pinyin-pro: ^3.14.0
   postcss: ^8.4.23
   prettier: ^2.8.8
@@ -49,6 +50,7 @@ dependencies:
   mdfind: 1.0.0
   nanoid: 4.0.2
   pinia: 2.0.36_typescript@5.0.4+vue@3.3.2
+  pinia-persistence: 1.0.0_pinia@2.0.36
   pinyin-pro: 3.14.0
   utools-utils: 1.0.2
   vue: 3.3.2
@@ -1671,6 +1673,14 @@ packages:
     resolution: {integrity: sha512-udgsAY+fTnvv7kI7aaxbqwWNb0AHiB0qBO89PZKPkoTmGOgdbrHDKD+0B2X4uTfJ/FT1R09r9gTsjUjNJotuog==}
     engines: {node: '>=0.10.0'}
     dev: true
+
+  /pinia-persistence/1.0.0_pinia@2.0.36:
+    resolution: {integrity: sha512-l20gncSCD9WleBMlw8jtXRm2CGzFnMO/NeP5HHW1daaBPqRZxdhVp/+YVS3+S+ED3HCsC6Lwq+cftimnEN6mGg==}
+    peerDependencies:
+      pinia: ^2.0.0
+    dependencies:
+      pinia: 2.0.36_typescript@5.0.4+vue@3.3.2
+    dev: false
 
   /pinia/2.0.36_typescript@5.0.4+vue@3.3.2:
     resolution: {integrity: sha512-4UKApwjlmJH+VuHKgA+zQMddcCb3ezYnyewQ9NVrsDqZ/j9dMv5+rh+1r48whKNdpFkZAWVxhBp5ewYaYX9JcQ==}

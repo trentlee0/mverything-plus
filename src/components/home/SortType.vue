@@ -1,7 +1,8 @@
 <template>
   <div
     @click="
-      modelValue === SortTypeEnum.ASC ? SortTypeEnum.DESC : SortTypeEnum.ASC
+      modelValue =
+        modelValue === SortTypeEnum.ASC ? SortTypeEnum.DESC : SortTypeEnum.ASC
     "
   >
     <v-icon size="default" v-show="modelValue === SortTypeEnum.ASC">

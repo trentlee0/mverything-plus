@@ -6,7 +6,7 @@
     >
       <pre
         class="tw-h-full"
-      ><code class='tw-min-h-full tw-block tw-overflow-x-auto tw-p-3'>{{ text }}</code></pre>
+      ><code class="tw-min-h-full tw-block tw-overflow-x-auto tw-p-3">{{ text }}</code></pre>
     </div>
 
     <div
