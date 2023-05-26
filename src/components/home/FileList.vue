@@ -9,7 +9,7 @@
   >
     <template #default="{ item, index }: { item: BaseFileInfo, index: number }">
       <div
-        class="tw-flex tw-w-full tw-cursor-pointer tw-select-none tw-items-center"
+        class="tw-flex tw-w-full tw-select-none tw-items-center"
         @contextmenu="onContextMenu($event, index)"
         @mouseover="handleMouseEnter(index)"
         @click="handleItemClick(index, item)"
