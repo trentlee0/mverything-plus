@@ -56,7 +56,7 @@
         {
           "type": "regex",
           "label": "文件搜索",
-          "match": "/^(f )(.*)$/",
+          "match": "/^( )(.*)$/",
           "minLength": 1,
           "maxLength": 100
         }

@@ -241,10 +241,7 @@ import {
   readCurrentFolderPath,
   createBrowserWindow,
   showMainWindow,
-  Action,
-  ActionType,
-  FilesPayload,
-  Payload
+  Action
 } from 'utools-api'
 import emptyImg from '@/assets/empty_inbox.svg'
 import { buildQuery, getSearchRegExp, splitKeyword } from '@/utils/query'
@@ -789,11 +786,10 @@ onBeforeUnmount(() => {
   qlWin.destroy()
 })
 
-async function init(code: string, type: ActionType, payload: Payload) {
-  switch (type) {
+async function init(action: Action) {
+  switch (action.type) {
     case 'files':
-      const files = payload as FilesPayload
-      tempDirectory.value = files[0].path
+      tempDirectory.value = action.payload[0].path
       break
     case 'window':
       try {
@@ -804,27 +800,25 @@ async function init(code: string, type: ActionType, payload: Payload) {
       }
       break
     case 'regex':
-      payload = payload as string
-      if (payload.startsWith('f ')) {
-        query.value = payload.replace('f ', '')
+      if (action.payload.startsWith(' ')) {
+        query.value = action.payload.replace(' ', '')
         search(query.value)
-      } else if (await existsDir(payload)) {
-        tempDirectory.value = payload
+      } else if (await existsDir(action.payload)) {
+        tempDirectory.value = action.payload
       }
       break
     case 'over':
-      query.value = payload as string
+      query.value = action.payload
       search(query.value)
       break
   }
 }
 
 onPluginEnter(async (action) => {
-  const { code, type, payload } = action as Action
   // 更新搜索范围
   commonStore.refreshDefaultSearchScopes()
 
-  await init(code, type, payload)
+  await init(action as Action)
   focusInput()
   selectText()
 

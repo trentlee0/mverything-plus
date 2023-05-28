@@ -14,7 +14,7 @@ import { fileMetadata } from 'file-metadata'
 import chardet from 'chardet'
 import iconv from 'iconv-lite'
 import { FileConstant } from '@/constant'
-import { execAppleScript } from 'utools-utils'
+import { execAppleScript } from 'utools-utils/preload'
 import { hideMainWindow } from 'utools-api'
 
 let terminateFunc: Nullable<() => boolean> = null

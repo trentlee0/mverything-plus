@@ -23,7 +23,7 @@
     "pinia": "^2.1.3",
     "pinia-persistence": "^1.0.0",
     "pinyin-pro": "^3.14.0",
-    "utools-utils": "^1.0.6",
+    "utools-utils": "^1.0.9",
     "vue": "^3.3.4",
     "vue-draggable-next": "^2.1.1",
     "vue-router": "^4.2.1",
