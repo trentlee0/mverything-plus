@@ -63,7 +63,7 @@
 import ShowBox from '@/components/common/ShowBox.vue'
 import { reactive } from 'vue'
 import { shellOpenExternal } from 'utools-api'
-import { pluginName, version, author, homepage } from '../../../../plugin.json'
+import { pluginName, version, author, homepage } from '../../../../public/plugin.json'
 import { mdiHelpCircleOutline } from '@mdi/js'
 
 const searchShortcuts = reactive([

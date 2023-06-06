@@ -26,11 +26,7 @@ export default defineConfig({
         watch: true,
         name: 'window.preload'
       },
-      buildUpx: {
-        pluginPath: './plugin.json',
-        outDir: './dist-upx',
-        outName: '[pluginName]_[version].upx'
-      }
+      buildUpx: false
     })
   ],
   resolve: {

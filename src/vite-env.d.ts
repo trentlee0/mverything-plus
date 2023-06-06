@@ -34,5 +34,5 @@ declare module 'utools-api' {
     | 'prependOnceListener'
   >
 
-  export * from 'utools-utils/type'
+  export type * from 'utools-utils'
 }

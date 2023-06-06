@@ -36,7 +36,9 @@
           "type": "window",
           "label": "在此文件夹中搜索",
           "match": {
-            "app": "Finder.app"
+            "app": [
+              "Finder.app"
+            ]
           }
         },
         {

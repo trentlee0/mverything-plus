@@ -10,8 +10,8 @@ import { KindFilterModel, SearchScopeModel, SettingModel } from '@/models'
 
 export const useCommonStore = defineStore('common', {
   state: () => ({
-    isPreviewContent: storage.sync.getOrDefault(StoreKey.IS_PREVIEW_CONTENT, true),
-    displayMode: storage.sync.getOrDefault(
+    isPreviewContent: storage.sync.get(StoreKey.IS_PREVIEW_CONTENT, true),
+    displayMode: storage.sync.get(
       StoreKey.DISPLAY_MODE,
       DisplayModeEnum.PREVIEW
     ),

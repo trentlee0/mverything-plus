@@ -161,5 +161,5 @@ export async function openInfoWindow(path: string) {
         open information window of ((POSIX file "${path}") as alias)
         activate information window
     end tell`
-  await execAppleScript(script)
+  await execAppleScript(script, true)
 }
