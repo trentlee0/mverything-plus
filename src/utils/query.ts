@@ -1,7 +1,7 @@
 import { ContentType } from '@/constant'
 import { SimpleFilterEnum } from '@/constant'
 import { KindFilterModel } from '@/models'
-import { escapeRegExp } from 'lodash'
+import escapeRegExp from 'lodash/escapeRegExp'
 
 type BuildQueryFn = (builder: QueryBuilder) => QueryBuilder
 

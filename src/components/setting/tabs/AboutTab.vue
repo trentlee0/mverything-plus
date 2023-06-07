@@ -21,8 +21,8 @@
     </ShowBox>
 
     <ShowBox
-      title="附：所有快捷键"
-      subtitle="以下快捷键操作，都接近 Mac 默认的键盘快捷键。"
+      title="所有快捷键"
+      subtitle="以下所有快捷键操作，都接近 Mac 默认的键盘快捷键。"
     >
       <div class="tw-font-bold">搜索页</div>
       <v-table density="compact">

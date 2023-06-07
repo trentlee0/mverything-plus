@@ -204,7 +204,8 @@ import {
   onActivated,
   onBeforeUnmount
 } from 'vue'
-import { debounce, isUndefined } from 'lodash'
+import debounce from 'lodash/debounce'
+import isUndefined from 'lodash/isUndefined'
 import { onKeyDown, onStartTyping, useWindowFocus } from '@vueuse/core'
 import {
   DisplayModeEnum,

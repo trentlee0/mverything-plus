@@ -1,6 +1,6 @@
 import { SortTypeEnum } from '@/constant'
 import * as icons from './icons'
-import { isNull } from 'lodash'
+import isNull from 'lodash/isNull'
 import { BaseFileInfo, FindFileMetadata } from '@/models'
 import { match } from 'pinyin-pro'
 

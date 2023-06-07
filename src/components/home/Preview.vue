@@ -155,7 +155,7 @@ import { formatDatetime, handleBytesToHuman } from '@/utils/strings'
 import { FilePreviewType } from '@/constant'
 import { copyText } from 'utools-api'
 import { ref } from 'vue'
-import { isNull } from 'lodash'
+import isNull from 'lodash/isNull'
 
 withDefaults(
   defineProps<{
