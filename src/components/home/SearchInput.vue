@@ -70,13 +70,21 @@ function selectText() {
   el.selectionEnd = el.value.length
 }
 
+function unselectText() {
+  if (!inputRef.value) return
+  const el = inputRef.value
+  el.selectionStart = el.value.length
+  el.selectionEnd = el.value.length
+}
+
 defineExpose({
   isFocus() {
     return isInputFocus.value
   },
   focus,
   blur,
-  selectText
+  selectText,
+  unselectText
 })
 </script>
 

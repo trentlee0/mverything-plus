@@ -253,6 +253,7 @@ import { ContentType } from '@/constant'
 import { BaseFileInfo, KindFilterModel, PreviewFileInfo } from '@/models'
 import { useToast } from 'vue-toastification'
 import { useRouter } from 'vue-router'
+import { unlinkSync } from 'fs'
 
 const toast = useToast()
 
@@ -592,6 +593,10 @@ function selectText() {
   searchInputRef.value?.selectText()
 }
 
+function unselectText() {
+  searchInputRef.value?.unselectText()
+}
+
 const menuActions = reactive({
   open() {
     if (isUndefined(selectedIndex.value)) return
@@ -685,6 +690,7 @@ useHotkeys('command+f', () => focusInput(), { scope: ScopeName.HOME })
 
 onStartTyping(() => {
   if (isCurrentScope.value) {
+    unselectText()
     focusInput()
   }
 })
@@ -786,6 +792,8 @@ onBeforeUnmount(() => {
   qlWin.destroy()
 })
 
+const isInputQuery = ref(false)
+
 async function init(action: Action) {
   switch (action.type) {
     case 'files':
@@ -802,6 +810,7 @@ async function init(action: Action) {
     case 'regex':
       if (action.payload.startsWith(' ')) {
         query.value = action.payload.replace(' ', '')
+        isInputQuery.value = true
         search(query.value)
       } else if (await existsDir(action.payload)) {
         tempDirectory.value = action.payload
@@ -809,18 +818,27 @@ async function init(action: Action) {
       break
     case 'over':
       query.value = action.payload
+      isInputQuery.value = true
       search(query.value)
       break
   }
 }
 
-onPluginEnter(async (action) => {
+onPluginEnter(async (action: Action) => {
   // 更新搜索范围
   commonStore.refreshDefaultSearchScopes()
 
-  await init(action as Action)
+  const lastQuery = query.value
+  isInputQuery.value = false
+  await init(action)
   focusInput()
-  selectText()
+  if (isInputQuery.value) {
+    unselectText()
+  } else {
+    if (lastQuery) {
+      selectText()
+    }
+  }
 
   if (isFindInTempScope.value) {
     query.value = ''

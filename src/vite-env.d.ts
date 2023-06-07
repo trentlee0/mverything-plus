@@ -13,6 +13,9 @@ declare module 'utools-api' {
 
 declare module 'utools-api' {
   import type { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
+  import { Action } from 'utools-utils/type'
+
+  export type * from 'utools-utils/type'
 
   export function createBrowserWindow(
     url: string,
@@ -34,5 +37,5 @@ declare module 'utools-api' {
     | 'prependOnceListener'
   >
 
-  export type * from 'utools-utils'
+  export function onPluginEnter(callback: (action: Action) => void): void
 }
