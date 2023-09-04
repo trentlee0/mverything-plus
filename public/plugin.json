@@ -22,6 +22,7 @@
     {
       "code": "find",
       "explain": "查找 Mac 上的文件",
+      "mainPush": true,
       "cmds": [
         "find",
         "查找",
@@ -58,7 +59,7 @@
         {
           "type": "regex",
           "label": "文件搜索",
-          "match": "/^( )(.*)$/",
+          "match": "/^[ '\u2018\u2019](.*)$/",
           "minLength": 1,
           "maxLength": 100
         }

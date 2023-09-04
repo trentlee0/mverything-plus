@@ -13,9 +13,9 @@ import mdfind from 'mdfind'
 import { fileMetadata } from 'file-metadata'
 import chardet from 'chardet'
 import iconv from 'iconv-lite'
-import { FileConstant } from '@/constant'
+import { ContentType, FileConstant } from '@/constant'
 import { execAppleScript } from 'utools-utils/preload'
-import { hideMainWindow } from 'utools-api'
+import { MainPushItem, hideMainWindow } from 'utools-api'
 
 let terminateFunc: Nullable<() => boolean> = null
 
@@ -28,21 +28,13 @@ function kill() {
   return true
 }
 
-export function find(
+function spotlight(
   query: string,
   directories: string[],
+  attributes: Array<keyof PrimaryFileMetadata>,
   limit?: number
 ): Promise<Array<FindFileMetadata>> {
   kill()
-  const attributes: Array<keyof PrimaryFileMetadata> = [
-    'kMDItemContentType',
-    'kMDItemKind',
-    'kMDItemFSName',
-    'kMDItemFSSize',
-    'kMDItemFSCreationDate',
-    'kMDItemFSContentChangeDate',
-    'kMDItemLastUsedDate'
-  ]
   return new Promise((resolve, reject) => {
     const res = mdfind({
       query,
@@ -66,6 +58,42 @@ export function find(
       resolve([])
     }
   })
+}
+
+export async function findPush(
+  query: string,
+  directories: string[],
+  limit: number
+): Promise<Array<MainPushItem>> {
+  return (
+    await spotlight(
+      query,
+      directories,
+      ['kMDItemFSName', 'kMDItemContentType'],
+      limit
+    )
+  ).map((v) => ({
+    text: v.kMDItemFSName,
+    title: v.kMDItemPath,
+    icon:
+      v.kMDItemContentType === ContentType.FOLDER ? 'folder.png' : 'file.png'
+  }))
+}
+
+export function find(
+  query: string,
+  directories: string[]
+): Promise<Array<FindFileMetadata>> {
+  const attributes: Array<keyof PrimaryFileMetadata> = [
+    'kMDItemContentType',
+    'kMDItemKind',
+    'kMDItemFSName',
+    'kMDItemFSSize',
+    'kMDItemFSCreationDate',
+    'kMDItemFSContentChangeDate',
+    'kMDItemLastUsedDate'
+  ]
+  return spotlight(query, directories, attributes)
 }
 
 export function killFind() {

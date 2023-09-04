@@ -17,6 +17,14 @@ declare module 'utools-api' {
 
   export type * from 'utools-utils/type'
 
+  export interface MainPushItem {
+    icon?: string
+    text: string
+    title?: string
+
+    [prop: string]: any
+  }
+
   export function createBrowserWindow(
     url: string,
     options: BrowserWindowConstructorOptions,
@@ -38,4 +46,9 @@ declare module 'utools-api' {
   >
 
   export function onPluginEnter(callback: (action: Action) => void): void
+
+  export function onMainPush(
+    callback: (action: Action) => MainPushItem[] | Promise<MainPushItem[]>,
+    selectCallback: (action: Action & { option: MainPushItem }) => void
+  ): void
 }

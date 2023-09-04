@@ -229,7 +229,8 @@ import {
   readFileList,
   readFilePartText,
   trashFile,
-  openInfoWindow
+  openInfoWindow,
+  findPush
 } from '@/preload'
 import {
   shellShowItemInFolder,
@@ -242,7 +243,10 @@ import {
   readCurrentFolderPath,
   createBrowserWindow,
   showMainWindow,
-  Action
+  Action,
+  onMainPush,
+  MainPushItem,
+  showNotification
 } from 'utools-api'
 import emptyImg from '@/assets/empty_inbox.svg'
 import { buildQuery, getSearchRegExp, splitKeyword } from '@/utils/query'
@@ -795,6 +799,11 @@ onBeforeUnmount(() => {
 
 const isInputQuery = ref(false)
 
+function regexKeywordWith(payload: string) {
+  const re = /^[ '\u2018\u2019]/
+  return re.test(payload) ? payload.replace(re, '') : null
+}
+
 async function init(action: Action) {
   switch (action.type) {
     case 'files':
@@ -809,10 +818,10 @@ async function init(action: Action) {
       }
       break
     case 'regex':
-      if (action.payload.startsWith(' ')) {
-        query.value = action.payload.replace(' ', '')
+      const q = regexKeywordWith(action.payload)
+      if (q !== null) {
+        query.value = q
         isInputQuery.value = true
-        search(query.value)
       } else if (await existsDir(action.payload)) {
         tempDirectory.value = action.payload
       }
@@ -820,10 +829,42 @@ async function init(action: Action) {
     case 'over':
       query.value = action.payload
       isInputQuery.value = true
-      search(query.value)
       break
   }
 }
+
+onMainPush(
+  async (action: Action) => {
+    let q: string | null
+    if (
+      action.type === 'regex' &&
+      (q = regexKeywordWith(action.payload))?.trimEnd()
+    ) {
+      const currentQuery = buildQuery(
+        q,
+        searchKind.value,
+        settingStore.isFindFileContent
+      )
+      const limit = 6
+      const arr = await findPush(
+        currentQuery,
+        searchScopeDirectories.value,
+        limit
+      )
+      if (arr.length !== limit) return arr
+      return arr.slice(0, 5).concat({ text: '进入插件搜索...', enter: true })
+    }
+    return []
+  },
+  (action) => {
+    if (action.option.enter) {
+      return true
+    }
+    if (action.option.title) {
+      shellOpenPath(action.option.title)
+    }
+  }
+)
 
 onPluginEnter(async (action: Action) => {
   // 更新搜索范围
@@ -834,6 +875,7 @@ onPluginEnter(async (action: Action) => {
   await init(action)
   focusInput()
   if (isInputQuery.value) {
+    search(query.value)
     unselectText()
   } else {
     if (lastQuery) {
