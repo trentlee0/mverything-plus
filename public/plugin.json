@@ -22,7 +22,6 @@
     {
       "code": "find",
       "explain": "查找 Mac 上的文件",
-      "mainPush": true,
       "cmds": [
         "find",
         "查找",
@@ -55,7 +54,14 @@
           "exclude": "/[\\\\\\/\\t\\n]/",
           "minLength": 1,
           "maxLength": 100
-        },
+        }
+      ]
+    },
+    {
+      "code": "find-push",
+      "mainPush": true,
+      "explain": "快速搜索文件",
+      "cmds": [
         {
           "type": "regex",
           "label": "文件搜索",
