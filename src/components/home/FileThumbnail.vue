@@ -1,6 +1,6 @@
 <template>
   <div class="tw-flex tw-w-full tw-justify-center">
-    <div class="tw-h-52 tw-w-52">
+    <div class="tw-h-44 tw-w-44">
       <v-img :src="src" cover />
     </div>
   </div>

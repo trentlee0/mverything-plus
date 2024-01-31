@@ -1,6 +1,6 @@
 import { defineStore, createPinia, Store } from 'pinia'
 import persistencePiniaPlugin from 'pinia-persistence'
-import { storage } from 'utools-utils'
+import { sync } from 'utools-utils'
 import { StoreKey } from '@/constant'
 import { DisplayModeEnum } from '@/constant'
 import { toRaw } from 'vue'
@@ -10,24 +10,26 @@ import { KindFilterModel, SearchScopeModel, SettingModel } from '@/models'
 
 export const useCommonStore = defineStore('common', {
   state: () => ({
-    isPreviewContent: storage.sync.get(StoreKey.IS_PREVIEW_CONTENT, true),
-    displayMode: storage.sync.get(
-      StoreKey.DISPLAY_MODE,
-      DisplayModeEnum.PREVIEW
-    ),
+    isPreviewContent: sync.get(StoreKey.IS_PREVIEW_CONTENT, true),
+    displayMode: sync.get(StoreKey.DISPLAY_MODE, DisplayModeEnum.PREVIEW),
+    isShowRecent: sync.get(StoreKey.IS_SHOW_RECENT, true),
     defaultSearchScopes: SearchScopeModel.defaultSearchScopes()
   }),
   actions: {
     setIsPreviewContent(isPreview: boolean) {
-      storage.sync.set(StoreKey.IS_PREVIEW_CONTENT, isPreview)
+      sync.set(StoreKey.IS_PREVIEW_CONTENT, isPreview)
       this.isPreviewContent = isPreview
     },
     setDisplayMode(displayMode: DisplayModeEnum) {
-      storage.sync.set(StoreKey.DISPLAY_MODE, displayMode)
+      sync.set(StoreKey.DISPLAY_MODE, displayMode)
       this.displayMode = displayMode
     },
-    refreshDefaultSearchScopes() {
-      this.defaultSearchScopes = SearchScopeModel.defaultSearchScopes(true)
+    setIsShowRecent(showRecent: boolean) {
+      sync.set(StoreKey.IS_SHOW_RECENT, showRecent)
+      this.isShowRecent = showRecent
+    },
+    async refreshDefaultSearchScopes() {
+      this.defaultSearchScopes = await SearchScopeModel.refreshDefaultSearchScopes()
     }
   }
 })
@@ -74,14 +76,16 @@ export const useSettingStore = defineStore(StoreKey.SETTING, {
   },
   actions: {
     removeSearchScope(indexInAll: number) {
-      const index = indexInAll - 2
+      const commonStore = useCommonStore()
+      const index = indexInAll - commonStore.defaultSearchScopes.length
       if (isIllegalIndex(this.searchScopes, index)) return
       this.searchScopes.splice(index, 1)
     },
-    getOrFallbackSearchScope(searchScopeId: string) {
+    getSearchScope(searchScopeId: string) {
       const scope = this.allSearchScopes.find((s) => s.id === searchScopeId)
       if (scope) return scope
 
+      // fallback
       this.searchRoot = SearchScopeModel.USER_ID
       return SearchScopeModel.USER
     }

@@ -9,11 +9,14 @@ export * from './SettingModel'
 export interface PrimaryFileMetadata {
   kMDItemContentType: string
   kMDItemKind: string
-  kMDItemFSName: string
+  kMDItemDisplayName: string
   kMDItemFSSize: string | null
-  kMDItemFSCreationDate: string
-  kMDItemFSContentChangeDate: string
+  kMDItemContentCreationDate: string | null
+  kMDItemContentModificationDate: string | null
+  kMDItemFSCreationDate: string | null
+  kMDItemFSContentChangeDate: string | null
   kMDItemLastUsedDate: string | null
+  kMDItemUserTags: string[]
 }
 
 export interface FindFileMetadata extends PrimaryFileMetadata {
@@ -21,33 +24,37 @@ export interface FindFileMetadata extends PrimaryFileMetadata {
 }
 
 export interface ExtraFileMetadata {
-  contentCreationDate?: Date
-  contentModificationDate?: Date
-  contentType?: string
-  contentTypeTree?: string[]
-  fsName?: string
-  fsNodeCount?: number
-  fsSize?: number
-  kind?: string
-  lastUsedDate?: Date
-  pixelHeight?: number
-  pixelWidth?: number
-  userTags?: string[]
+  kMDItemContentCreationDate?: Date
+  kMDItemContentModificationDate?: Date
+  kMDItemContentType?: string
+  kMDItemContentTypeTree?: string[]
+  kMDItemCopyright?: string
+  kMDItemExecutableArchitectures?: string[]
+  kMDItemFSName?: string
+  kMDItemFSNodeCount?: number
+  kMDItemFSSize?: number
+  kMDItemKind?: string
+  kMDItemLastUsedDate?: Date
+  kMDItemPixelHeight?: number
+  kMDItemPixelWidth?: number
+  kMDItemUserTags?: string[]
+  kMDItemVersion?: string
 }
 
 // ========================= File Info =========================
 
 export interface BaseFileInfo {
   name: string
-  nameHighlight?: string
+  highlightName?: string
   path: string
+  highlightPath?: string
   icon: string
   size: number | null
   type: string
   kind: string
-  createDate: string
-  updateDate: string | null
-  usedDate: string | null
+  createDate?: string | Date | null
+  updateDate?: string | Date | null
+  usedDate?: string | Date | null
 }
 
 export interface PreviewFileInfo extends BaseFileInfo {
@@ -61,9 +68,13 @@ export interface PreviewFileInfo extends BaseFileInfo {
   readTextSize?: number
   textEncoding?: string
   files?: Array<SimpleFileInfo>
+  tags?: string[]
+  version?: string
+  architectures?: string[]
+  copyright?: string
 }
 
 export interface SimpleFileInfo {
   name: string
-  isFile: boolean
+  isDirectory: boolean
 }

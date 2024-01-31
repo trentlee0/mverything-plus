@@ -1,25 +1,40 @@
-import { onKeyDown, onKeyUp, KeyFilter } from '@vueuse/core'
-import { onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 
 export function useKeyLongPress(
-  key: KeyFilter,
-  downHandler: (event: KeyboardEvent) => void,
-  upHandler: (event: KeyboardEvent) => void,
+  key: string,
+  handler: (event: KeyboardEvent) => void,
+  cancelHandler: (event: KeyboardEvent, isKeyUp: boolean) => void,
   timeout: number
 ) {
-  let timer: number
+  const checkKey = (e: KeyboardEvent) => e.key === key
 
-  onKeyDown(key, (e) => {
-    timer = window.setTimeout(() => {
-      downHandler(e)
-    }, timeout)
-  })
-  onKeyUp(key, (e) => {
-    window.clearTimeout(timer)
-    upHandler(e)
+  let timer: number
+  const handleDown = (e: KeyboardEvent) => {
+    if (checkKey(e)) {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        handler(e)
+      }, timeout)
+    } else {
+      window.clearTimeout(timer)
+      cancelHandler(e, false)
+    }
+  }
+  const handleUp = (e: KeyboardEvent) => {
+    if (checkKey(e)) {
+      window.clearTimeout(timer)
+      cancelHandler(e, true)
+    } else {
+      window.clearTimeout(timer)
+    }
+  }
+  onMounted(() => {
+    window.addEventListener('keydown', handleDown)
+    window.addEventListener('keyup', handleUp)
   })
 
   onBeforeUnmount(() => {
-    window.clearTimeout(timer)
+    window.removeEventListener('keydown', handleDown)
+    window.removeEventListener('keyup', handleUp)
   })
 }

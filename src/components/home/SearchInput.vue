@@ -5,15 +5,12 @@
     @click="focus"
   >
     <div class="tw-flex tw-items-center" :style="{ width, height }">
-      <div
-        class="tw-flex tw-items-center tw-px-2 tw-text-neutral-500"
-        :style="`height: ${height}`"
-      >
+      <div class="inner-class" :style="`height: ${height}`" v-if="$slots['prepend-inner']">
         <slot name="prepend-inner"></slot>
       </div>
       <input
         ref="inputRef"
-        class="tw-outline-none"
+        class="tw-flex-grow tw-outline-none"
         type="text"
         v-model="modelValue"
         autofocus
@@ -21,6 +18,9 @@
         @focus="handleFocus"
         @blur="handleBlur"
       />
+      <div class="inner-class" :style="`height: ${height}`">
+        <slot name="append-inner"></slot>
+      </div>
     </div>
   </div>
 </template>
@@ -53,6 +53,7 @@ function handleFocus() {
 
 function handleBlur() {
   isInputFocus.value = false
+  unselectText()
 }
 
 function focus() {
@@ -91,5 +92,9 @@ defineExpose({
 <style lang="scss" scoped>
 .focus-class {
   @apply tw-border-2 tw-border-neutral-900 tw-p-0 dark:tw-border-neutral-200;
+}
+
+.inner-class {
+  @apply tw-flex tw-items-center tw-px-2 tw-text-neutral-500;
 }
 </style>

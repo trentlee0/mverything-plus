@@ -127,7 +127,7 @@ export function getIcon(item: FindFileMetadata) {
 
   const icon = Reflect.get(typeIcons, type)
   if (icon === undefined) {
-    const ext = getFileExtension(item.kMDItemFSName)
+    const ext = getFileExtension(item.kMDItemDisplayName)
     if (ext !== '') {
       return Reflect.get(extIcons, ext) || baseIcons.file
     }
@@ -136,8 +136,8 @@ export function getIcon(item: FindFileMetadata) {
   return icon
 }
 
-export function getFileIcon(filename: string, isFile: boolean) {
-  if (!isFile) return baseIcons.folder
+export function getFileIcon(filename: string, isDirectory: boolean) {
+  if (isDirectory) return baseIcons.folder
   const ext = getFileExtension(filename)
   if (ext !== '') {
     const icon = Reflect.get(baseIcons, ext) || Reflect.get(extIcons, ext)

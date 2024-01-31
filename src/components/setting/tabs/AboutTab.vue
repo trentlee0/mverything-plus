@@ -22,7 +22,7 @@
 
     <ShowBox
       title="所有快捷键"
-      subtitle="以下所有快捷键操作，都接近 Mac 默认的键盘快捷键。"
+      subtitle="以下是所有快捷键操作。"
     >
       <div class="tw-font-bold">搜索页</div>
       <v-table density="compact">
@@ -77,15 +77,15 @@ const searchShortcuts = reactive([
   },
   {
     action: '显示详情（列表模式）',
-    keyboard: '→'
+    keyboard: '⌘ →'
   },
   {
     action: '左切换类型筛选',
-    keyboard: '⇧ ⌘ ['
+    keyboard: '←, ⇧ ⌘ ['
   },
   {
     action: '右切换类型筛选',
-    keyboard: '⇧ ⌘ ]'
+    keyboard: '→, ⇧ ⌘ ]'
   },
   {
     action: '选中上一项',
@@ -137,10 +137,6 @@ const menuShortcuts = reactive([
   {
     action: '拷贝路径',
     keyboard: '⌥ ⌘ C'
-  },
-  {
-    action: '移到废纸篓',
-    keyboard: '⌘ ⌫'
   }
 ])
 </script>

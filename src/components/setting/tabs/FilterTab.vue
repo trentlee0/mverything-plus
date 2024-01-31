@@ -50,7 +50,7 @@
       </draggable>
     </FlexTable>
 
-    <v-btn variant="text" @click="handleOpenKindDialog()">添加</v-btn>
+    <v-btn variant="text" @click="handleOpenKindDialog()">新增</v-btn>
 
     <div class="tw-mx-1 tw-mt-8 tw-font-bold">正则筛选</div>
     <FlexTable>
@@ -85,17 +85,21 @@
       </BodyRow>
     </FlexTable>
 
-    <v-btn variant="text" @click="regexDialog = true">添加</v-btn>
+    <v-btn variant="text" @click="regexDialog = true">新增</v-btn>
   </v-sheet>
 
-  <v-dialog v-model="kindDialog" width="auto">
+  <v-dialog
+    v-model="kindDialog"
+    width="auto"
+    @update:model-value="($event) => !$event && handleCloseKindDialog()"
+  >
     <v-card width="400">
       <v-toolbar color="transparent">
         <v-btn icon @click="handleCloseKindDialog">
           <v-icon>{{ mdiClose }}</v-icon>
         </v-btn>
         <v-toolbar-title>
-          {{ updatedKind ? '修改' : '添加' }}类型筛选
+          {{ updatedKind ? '修改' : '新增' }}类型筛选
         </v-toolbar-title>
       </v-toolbar>
       <v-card-text>
@@ -117,7 +121,7 @@
             variant="outlined"
             :rules="kindRules.value"
             :readonly="isDisabledKind"
-            placeholder="多个类型用 `|` 分隔，排除用 `!`"
+            placeholder="输入类型规则，多个类型用 `|` 分隔，排除用 `!`，以匹配文件类型"
           ></v-textarea>
         </v-form>
       </v-card-text>
@@ -149,7 +153,7 @@
         <v-btn icon @click="handleCloseRegexDialog">
           <v-icon>{{ mdiClose }}</v-icon>
         </v-btn>
-        <v-toolbar-title>添加正则筛选</v-toolbar-title>
+        <v-toolbar-title>新增正则筛选</v-toolbar-title>
       </v-toolbar>
       <v-card-text>
         <v-form ref="regexFormRef">
@@ -165,6 +169,7 @@
             class="tw-font-mono"
             v-model.trim="regexForm.regex"
             label="正则表达式"
+            placeholder="输入正则表达式，以匹配路径"
             density="compact"
             variant="outlined"
             :rules="regexRules.regex"
@@ -316,11 +321,14 @@ async function handleAddRegex() {
 }
 
 function handleRemoveRegex(index: number) {
-  try {
-    if (isIllegalIndex(settingStore.keyList, index)) return
-    settingStore.keyList.splice(index, 1)
-  } catch (e) {
-    toast.error(e + '')
+  if (confirm('确定要删除吗？')) {
+    try {
+      if (isLegalIndex(settingStore.keyList, index)) {
+        settingStore.keyList.splice(index, 1)
+      }
+    } catch (e) {
+      toast.error(e + '')
+    }
   }
 }
 </script>

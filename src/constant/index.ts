@@ -4,6 +4,7 @@ export namespace StoreKey {
   export const SETTING = 'setting'
   export const DISPLAY_MODE = 'displayItemIndex'
   export const IS_PREVIEW_CONTENT = 'enablePreviewContent'
+  export const IS_SHOW_RECENT = 'enableShowRecent'
 }
 
 export namespace FileConstant {
@@ -44,6 +45,14 @@ export namespace ContentType {
   export const ARCHIVE = 'public.archive'
 
   export const APPLICATION = 'com.apple.application'
+
+  export const EXECUTABLE = 'public.unix-executable'
+
+  export const VOLUME = 'public.volume'
+
+  export const DIRECTORY = 'public.directory'
+
+  export const ITEM = 'public.item'
 }
 
 export namespace ScopeName {

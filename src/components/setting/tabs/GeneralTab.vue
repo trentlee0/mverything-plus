@@ -26,6 +26,13 @@
       hide-details
     ></v-checkbox>
 
+    <v-checkbox
+      label="使用 uTools 内置搜索框"
+      v-model="settingStore.isUseSubInput"
+      density="comfortable"
+      hide-details
+    ></v-checkbox>
+
     <Subheader title="搜索范围">
       <template #append>
         <div class="tw-my-3 tw-flex tw-items-center">
@@ -36,11 +43,8 @@
             item-label="label"
             item-value="id"
           />
-          <div
-            class="tw-ml-3 tw-cursor-pointer"
-            @click="directoryDialog = true"
-          >
-            <v-icon>{{ mdiApps }}</v-icon>
+          <div class="tw-ml-3 tw-cursor-pointer" @click="directoryDialog = true">
+            <v-icon>{{ mdiViewHeadline }}</v-icon>
           </div>
         </div>
       </template>
@@ -62,10 +66,7 @@
       density="comfortable"
       hide-details
     ></v-checkbox>
-    <div
-      class="tw-ml-2 tw-mt-3 tw-w-1/2"
-      v-if="settingStore.nameHighlight.enabled"
-    >
+    <div class="tw-ml-2 tw-mt-3 tw-w-1/2" v-if="settingStore.nameHighlight.enabled">
       <v-row no-gutters>
         <v-col>
           <v-textarea
@@ -88,9 +89,7 @@
     </div>
 
     <Subheader>
-      <template #default>
-        当按下快捷键 <span class="tw-font-bold">⌘ 1...9</span> 时
-      </template>
+      <template #default> 当按下快捷键 <span class="tw-font-bold">⌘ 1...9</span> 时 </template>
       <template #append>
         <v-radio-group v-model="settingStore.isOpenAsShortcutting" hide-details>
           <v-radio label="仅选中项目" :value="false"></v-radio>
@@ -115,22 +114,24 @@
             <v-spacer />
             <v-col :cols="6">目录路径</v-col>
             <v-spacer />
-            <v-col :cols="2" class="tw-text-center">操作</v-col>
+            <v-col :cols="2" class="tw-text-left">操作</v-col>
           </HeaderRow>
           <BodyRow
             v-for="(dir, index) in settingStore.allSearchScopes"
             :key="dir.id"
             :active="index % 2 === 0"
+            :class="{ 'tw-text-neutral-700 dark:tw-text-neutral-200': !checkMutableScope(dir) }"
           >
             <v-col :cols="3">
               <div
                 class="tw-rounded-md tw-border tw-border-transparent focus-within:tw-border-neutral-400"
               >
                 <input
-                  class="tw-w-full tw-rounded-md tw-p-1 tw-outline-none"
+                  class="tw-w-full tw-text-ellipsis tw-rounded-md tw-p-1 tw-outline-none"
                   v-model.lazy="dir.label"
                   placeholder="输入名称"
-                  :disabled="!checkMutable(dir)"
+                  :title="!checkMutableScope(dir) ? dir.label : undefined"
+                  :disabled="!checkMutableScope(dir)"
                 />
               </div>
             </v-col>
@@ -147,20 +148,24 @@
             </v-col>
             <v-spacer />
             <v-col :cols="2" class="tw-flex tw-justify-center">
-              <v-btn
-                v-if="checkMutable(dir)"
-                variant="text"
-                color="error"
-                density="compact"
-                @click="handleRemoveDirectory(dir, index)"
-              >
-                删除
-              </v-btn>
+              <div v-if="checkMutableScope(dir)">
+                <v-btn variant="text" density="compact" @click="handleAddDirectory(dir, index)">
+                  添加
+                </v-btn>
+                <v-btn
+                  variant="text"
+                  color="error"
+                  density="compact"
+                  @click="handleRemoveDirectory(dir, index)"
+                >
+                  删除
+                </v-btn>
+              </div>
             </v-col>
           </BodyRow>
         </FlexTable>
         <v-card-actions>
-          <v-btn @click="handleAddDirectory"> 添加</v-btn>
+          <v-btn @click="handleCreateDirectory">新增</v-btn>
         </v-card-actions>
       </v-card-text>
     </v-card>
@@ -180,18 +185,23 @@ import { getBasename } from '@/preload'
 import HeaderRow from '@/components/setting/table/HeadRow.vue'
 import BodyRow from '@/components/setting/table/BodyRow.vue'
 import FlexTable from '@/components/setting/table/FlexTable.vue'
-import { mdiApps, mdiClose } from '@mdi/js'
+import { mdiClose, mdiViewHeadline } from '@mdi/js'
 
 const toast = useToast()
 const settingStore = useSettingStore()
 
 const directoryDialog = ref(false)
 
-function handleAddDirectory() {
+function showDirectoryDialog() {
   const paths = showOpenDialog({
     properties: ['openDirectory', 'multiSelections']
   })
-  if (paths && paths.length) {
+  return paths ?? []
+}
+
+function handleCreateDirectory() {
+  const paths = showDirectoryDialog()
+  if (paths.length) {
     try {
       const dir = new SearchScopeModel(nanoid(10), getBasename(paths[0]), paths)
       settingStore.searchScopes.push(dir)
@@ -201,12 +211,19 @@ function handleAddDirectory() {
   }
 }
 
-function checkMutable(dir: SearchScopeModel) {
-  return (
-    SearchScopeModel.defaultSearchScopes().findIndex(
-      (item) => item.id === dir.id
-    ) === -1
-  )
+function checkMutableScope(dir: SearchScopeModel) {
+  return SearchScopeModel.defaultSearchScopes().findIndex((item) => item.id === dir.id) === -1
+}
+
+function handleAddDirectory(dir: SearchScopeModel, index: number) {
+  const paths = showDirectoryDialog()
+  if (paths.length) {
+    try {
+      dir.paths.push(...paths)
+    } catch (e) {
+      toast.error(e + '')
+    }
+  }
 }
 
 function handleRemoveDirectory(dir: SearchScopeModel, index: number) {
@@ -214,7 +231,9 @@ function handleRemoveDirectory(dir: SearchScopeModel, index: number) {
     if (dir.id === settingStore.searchRoot) {
       toast.error('当前搜索范围已被选择，不能删除！')
     } else {
-      settingStore.removeSearchScope(index)
+      if (confirm('确定要删除吗？')) {
+        settingStore.removeSearchScope(index)
+      }
     }
   } catch (e) {
     toast.error(e + '')

@@ -23,7 +23,7 @@ export default defineConfig({
       external: 'utools-api',
       preload: {
         path: './src/preload.ts',
-        watch: true,
+        watch: false,
         name: 'window.preload'
       },
       buildUpx: false

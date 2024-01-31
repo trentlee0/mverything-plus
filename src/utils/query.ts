@@ -1,128 +1,176 @@
-import { ContentType } from '@/constant'
+import { ContentType, kMDItem } from '@/constant'
 import { SimpleFilterEnum } from '@/constant'
 import { KindFilterModel } from '@/models'
 import escapeRegExp from 'lodash/escapeRegExp'
 
 type BuildQueryFn = (builder: QueryBuilder) => QueryBuilder
 
-enum LogicalOperator {
+enum Logic {
   AND = '&&',
   OR = '||'
 }
 
-export class QueryBuilder {
-  private static readonly QUOTE = `"`
+enum Comparison {
+  EQ = '==',
+  NE = '!=',
+  GT = '>',
+  GE = '>=',
+  LT = '<',
+  LE = '<='
+}
 
-  protected ex = ''
+class QueryHelper {
+  static readonly QUOTE = '"'
 
-  private endsWithLogical() {
-    const trimEx = this.ex.trimEnd()
-    return (
-      trimEx.endsWith(LogicalOperator.OR) ||
-      trimEx.endsWith(LogicalOperator.AND)
-    )
+  // ================= Comparison =================
+
+  static expression(attr: string, comparison: string, val: string) {
+    return `${attr} ${comparison} ${val}`
   }
 
-  private append(logicalOp: LogicalOperator, s: string) {
-    if (this.ex && !this.endsWithLogical()) {
-      this.ex += ` ${logicalOp} `
+  static mark(val: string, ignoreCase?: boolean) {
+    // 转义引号
+    val = val.replaceAll(this.QUOTE, '\\' + this.QUOTE)
+    return this.QUOTE + val + this.QUOTE + (ignoreCase ? 'cd' : '')
+  }
+
+  static enclose(exp: string) {
+    return `(${exp})`
+  }
+
+  static inRange(attr: string, min: number, max: number) {
+    return `InRange(${attr},${min},${max})`
+  }
+
+  static like(val: string) {
+    return `*${val}*`
+  }
+
+  static likeStart(val: string) {
+    return `*${val}`
+  }
+
+  static likeEnd(val: string) {
+    return `${val}*`
+  }
+
+  // ================= Time and Date =================
+
+  private static offset(offset?: number) {
+    return offset ? `(${offset})` : ''
+  }
+
+  static now(offset?: number) {
+    return '$time.now' + this.offset(offset)
+  }
+
+  static today(offset?: number) {
+    return '$time.today' + this.offset(offset)
+  }
+
+  static thisWeek(offset?: number) {
+    return '$time.this_week' + this.offset(offset)
+  }
+
+  static thisMonth(offset?: number) {
+    return '$time.this_month' + this.offset(offset)
+  }
+
+  static thisYear(offset?: number) {
+    return '$time.this_year' + this.offset(offset)
+  }
+
+  static datetime(date: Date) {
+    return `$time.iso(${date.toISOString()})`
+  }
+}
+
+export class QueryBuilder {
+  protected exp = ''
+
+  private endsWithLogic() {
+    const trim = this.exp.trimEnd()
+    return trim.endsWith(Logic.OR) || trim.endsWith(Logic.AND)
+  }
+
+  private append(logic: Logic, s: string) {
+    if (this.exp && !this.endsWithLogic()) {
+      this.exp = QueryHelper.expression(this.exp, logic, '')
     }
-    this.ex += s
+    this.exp += s
     return this
   }
 
   // ================= Comparison =================
 
-  private escape(s: string) {
-    return s.replaceAll(QueryBuilder.QUOTE, '\\' + QueryBuilder.QUOTE)
+  private comparison(attr: kMDItem, comparison: Comparison, val: string, ignoreCase?: boolean) {
+    val = QueryHelper.mark(val, ignoreCase)
+    return this.append(Logic.AND, QueryHelper.expression(attr, comparison, val))
   }
 
-  private markValue(s: string, ignoreCase?: boolean) {
-    // 转义引号
-    s = this.escape(s)
-    return (
-      QueryBuilder.QUOTE + s + QueryBuilder.QUOTE + (ignoreCase ? 'cd' : '')
-    )
+  eq(cond: boolean, attr: kMDItem, val: string, ignoreCase?: boolean) {
+    return cond ? this.comparison(attr, Comparison.EQ, val, ignoreCase) : this
   }
 
-  private appendComparison(
-    name: string,
-    comparisonOp: string,
-    val: string,
-    ignoreCase?: boolean
-  ) {
-    return this.append(
-      LogicalOperator.AND,
-      `${name} ${comparisonOp} ${this.markValue(val, ignoreCase)}`
-    )
+  ne(cond: boolean, attr: kMDItem, val: string, ignoreCase?: boolean) {
+    return cond ? this.comparison(attr, Comparison.NE, val, ignoreCase) : this
   }
 
-  eq(cond: boolean, attr: string, val: string, ignoreCase?: boolean) {
-    return cond ? this.appendComparison(attr, '==', val, ignoreCase) : this
+  gt(attr: kMDItem, val: string) {
+    return this.comparison(attr, Comparison.GT, val)
   }
 
-  ne(cond: boolean, attr: string, val: string, ignoreCase?: boolean) {
-    return cond ? this.appendComparison(attr, '!=', val, ignoreCase) : this
+  ge(attr: kMDItem, val: string) {
+    return this.comparison(attr, Comparison.GE, val)
   }
 
-  gt(attr: string, val: string) {
-    return this.appendComparison(attr, '>', val)
+  lt(attr: kMDItem, val: string) {
+    return this.comparison(attr, Comparison.LT, val)
   }
 
-  ge(attr: string, val: string) {
-    return this.appendComparison(attr, '>=', val)
-  }
-
-  lt(attr: string, val: string) {
-    return this.appendComparison(attr, '<', val)
-  }
-
-  le(attr: string, val: string) {
-    return this.appendComparison(attr, '<=', val)
+  le(attr: kMDItem, val: string) {
+    return this.comparison(attr, Comparison.LE, val)
   }
 
   // ================= Like =================
 
-  likeStart(
-    cond: boolean,
-    attr: string,
-    val: string,
-    ignoreCase: boolean = true
-  ) {
-    return this.eq(cond, attr, `*${val}`, ignoreCase)
+  like(cond: boolean, attr: kMDItem, val: string, ignoreCase: boolean = true) {
+    return this.eq(cond, attr, QueryHelper.like(val), ignoreCase)
   }
 
-  likeEnd(
-    cond: boolean,
-    attr: string,
-    val: string,
-    ignoreCase: boolean = true
-  ) {
-    return this.eq(cond, attr, `${val}*`, ignoreCase)
+  notLike(cond: boolean, attr: kMDItem, val: string, ignoreCase: boolean = true) {
+    return this.ne(cond, attr, QueryHelper.like(val), ignoreCase)
   }
 
-  like(cond: boolean, attr: string, val: string, ignoreCase: boolean = true) {
-    return this.eq(cond, attr, `*${val}*`, ignoreCase)
+  likeStart(cond: boolean, attr: kMDItem, val: string, ignoreCase: boolean = true) {
+    return this.eq(cond, attr, QueryHelper.likeStart(val), ignoreCase)
+  }
+
+  likeEnd(cond: boolean, attr: kMDItem, val: string, ignoreCase: boolean = true) {
+    return this.eq(cond, attr, QueryHelper.likeEnd(val), ignoreCase)
   }
 
   // ================= Logical =================
 
-  private nested(logicalOp: LogicalOperator, queryFn?: BuildQueryFn) {
-    const val = queryFn?.(new QueryBuilder()).ex
-    if (val) this.append(logicalOp, `(${val})`)
+  private nested(logic: Logic, builder?: BuildQueryFn | QueryBuilder) {
+    let exp: string | undefined
+    exp = typeof builder === 'function' ? builder?.(new QueryBuilder()).exp : builder?.exp
+    if (exp) this.append(logic, QueryHelper.enclose(exp))
     return this
   }
 
-  and(queryFn: BuildQueryFn) {
-    return this.nested(LogicalOperator.AND, queryFn)
+  and(builder: BuildQueryFn | QueryBuilder) {
+    return this.nested(Logic.AND, builder)
   }
 
-  or(queryFn: BuildQueryFn) {
-    return this.nested(LogicalOperator.OR, queryFn)
+  or(builder: BuildQueryFn | QueryBuilder) {
+    return this.nested(Logic.OR, builder)
   }
+
+  // ================= Build =================
 
   build() {
-    return this.ex
+    return this.exp
   }
 }
 
@@ -170,46 +218,144 @@ function parseKindExpression(kindExp: string) {
   return { includes, excludes }
 }
 
+function unescapeQueryWord(word: string) {
+  // 反转义开头的 \- 为 -
+  if (word.startsWith('\\-')) return word.substring(1)
+  return word
+}
+
+function escapeMdfindQuery(q: string) {
+  // 只转义 \ 和 *
+  return q.replaceAll(/[\\*]/g, (s) => '\\' + s)
+}
+
 function getQuoteContent(s: string, leftQuote: string, rightQuote: string) {
-  if (
-    s.length > leftQuote.length + rightQuote.length &&
-    s.startsWith(leftQuote) &&
-    s.endsWith(rightQuote)
-  ) {
+  if (s.length > leftQuote.length + rightQuote.length && s.startsWith(leftQuote) && s.endsWith(rightQuote)) {
     return s.substring(leftQuote.length, s.length - rightQuote.length)
   }
   return ''
 }
 
 function parseQuoteContent(s: string) {
-  return (
+  const quoteContent =
     getQuoteContent(s, `"`, `"`) ||
     getQuoteContent(s, `'`, `'`) ||
     getQuoteContent(s, `“`, `”`) ||
     getQuoteContent(s, `‘`, `’`)
-  )
+  const hasQuote = !!quoteContent
+  let escapedContent = ''
+  if (hasQuote) {
+    escapedContent = escapeMdfindQuery(quoteContent)
+  }
+  return { hasQuote, escapedContent }
+}
+
+enum QueryTermType {
+  EXACT,
+  PARTLY_FUZZY,
+  FULLY_FUZZY,
+  EXCLUDED
+}
+
+interface QueryTerm {
+  type: QueryTermType
+  word: string
+}
+
+function parseQueryByWord(word: string): QueryTerm {
+  const { hasQuote, escapedContent } = parseQuoteContent(word)
+  // 精确匹配
+  if (hasQuote) {
+    return { word: escapedContent, type: QueryTermType.EXACT }
+  }
+
+  // 判断是否是部分模糊匹配
+  if (word.startsWith('*') || word.endsWith('*')) {
+    return { word, type: QueryTermType.PARTLY_FUZZY }
+  }
+
+  // 判断是否是排除匹配
+  if (word.startsWith('-')) {
+    let excludeWord = escapeMdfindQuery(word.replace('-', ''))
+    const { hasQuote, escapedContent } = parseQuoteContent(excludeWord)
+    if (hasQuote) {
+      excludeWord = escapedContent
+    }
+    return { word: excludeWord, type: QueryTermType.EXCLUDED }
+  }
+
+  // 默认为模糊匹配
+  const queryWord = unescapeQueryWord(word)
+  return { word: queryWord, type: QueryTermType.FULLY_FUZZY }
 }
 
 function splitSearchText(searchText: string) {
-  return searchText.split(/ +/)
+  // 以空格分割，由引号括起来的内容不分割
+  const words: string[] = []
+  const n = searchText.length
+  const quoteMap = new Map<string, string>([
+    [`"`, `"`],
+    [`'`, `'`],
+    [`“`, `”`],
+    [`‘`, `’`]
+  ])
+  let p = -1
+  const getRightQuoteIndex = (i: number, leftQuote: string) => {
+    let j = i + 1
+    const rightQuote = quoteMap.get(leftQuote)
+    while (j < n && searchText[j] !== rightQuote) j++
+    if (j === n) return i
+    return j
+  }
+  for (let i = 0; i < n; i++) {
+    if (searchText[i] === `"`) {
+      i = getRightQuoteIndex(i, `"`)
+    } else if (searchText[i] === `'`) {
+      i = getRightQuoteIndex(i, `'`)
+    } else if (searchText[i] === `“`) {
+      i = getRightQuoteIndex(i, `“`)
+    } else if (searchText[i] === `‘`) {
+      i = getRightQuoteIndex(i, `‘`)
+    } else {
+      if (searchText[i] === ' ') {
+        words.push(searchText.substring(p + 1, i))
+        p = i
+      }
+    }
+  }
+  if (p + 1 < n) {
+    words.push(searchText.substring(p + 1))
+  }
+
+  return words.map((text) => {
+    // 奇数个 \ 就移除最后一个
+    let n = text.length
+    let i = n - 1
+    while (i >= 0 && text[i] === '\\') i--
+    return (n - 1 - i) % 2 === 0 ? text : text.substring(0, n - 1)
+  })
+}
+
+export interface SearchTextPattern {
+  expression: string
+  // 使用空格隔开的搜索词
+  words: string[]
 }
 
 /**
  * 获取搜索匹配正则
  */
-export function getSearchRegExp(searchText: string) {
+export function getSearchTextPattern(searchText: string): SearchTextPattern {
   searchText = searchText.trim()
-  const quoteContent = parseQuoteContent(searchText)
-  if (quoteContent) {
-    searchText = quoteContent
+  const { hasQuote, escapedContent } = parseQuoteContent(searchText)
+  if (hasQuote) {
+    searchText = escapedContent
   }
   let n = searchText.length
   let l = 0
   let r = n - 1
-  while (l < n && searchText.charAt(l) === '*') l++
-  while (r > l && searchText.charAt(r) === '*') r--
 
-  const words = splitSearchText(searchText.substring(l, r + 1))
+  const words = splitSearchText(searchText.substring(l, r + 1)).filter((word) => !word.startsWith('-'))
   const locales = [
     [`“`, `”`, '"'],
     [`‘`, `’`, `'`, '`'],
@@ -223,35 +369,51 @@ export function getSearchRegExp(searchText: string) {
     [`｜`, '|'],
     [`＋`, '+']
   ]
-  const regexp = new RegExp(
-    words
-      .map((word) => {
-        let ans = ''
-        let locale: string[] | undefined = undefined
-        for (let i = 0; i < word.length; i++) {
-          const ch = word[i]
 
-          if (ch === '-') {
-            ans += `[-]?`
-          } else if ((locale = locales.find((item) => item.includes(ch)))) {
-            ans += `[${locale.join('')}]`
-          } else if (
-            i === word.length - 1 ||
-            i === 0 ||
-            ch === '.' ||
-            ch === '?'
-          ) {
-            ans += escapeRegExp(ch)
+  const expression = words
+    .map((word) => {
+      let ans = ''
+      let locale: string[] | undefined = undefined
+      let isEscape = false
+      for (let i = 0; i < word.length; i++) {
+        const ch = word[i]
+
+        if (ch === '\\') {
+          if (isEscape) {
+            ans += '\\\\'
+            isEscape = false
           } else {
-            ans += `[${ch}.-]{1,2}`
+            isEscape = true
           }
+          continue
         }
-        return `(${ans})`
-      })
-      .join('|'),
-    'ig'
-  )
-  return { regexp, words }
+
+        if (ch === '-') {
+          ans += `[-]?`
+        } else if (ch === '*') {
+          ans += isEscape ? '\\*' : ''
+          ans += i !== word.length - 1 && i !== 0 ? '|' : ''
+        } else if ((locale = locales.find((item) => item.includes(ch)))) {
+          ans += `[${locale.join('')}]`
+        } else if ((i === word.length - 1 || i === 0 || isEscape) && (ch === '.' || ch === '?')) {
+          ans += escapeRegExp(ch)
+        } else {
+          ans += `[${ch}][.-]?`
+        }
+        isEscape = false
+      }
+      return ans ? `(${ans})` : ''
+    })
+    .filter((item) => !!item)
+    .join('|')
+  return { expression, words }
+}
+
+export function buildRecentUsedQuery(recentMonth: number) {
+  return new QueryBuilder()
+    .ne(true, kMDItem.SupportFileType, 'MDSystemFile')
+    .ge(kMDItem.LastUsedDate, QueryHelper.thisMonth(recentMonth))
+    .build()
 }
 
 /**
@@ -264,7 +426,8 @@ export function getSearchRegExp(searchText: string) {
 export function buildQuery(
   searchText: string,
   kindModel: KindFilterModel,
-  isFindContent: boolean = false
+  isFindContent: boolean,
+  isFindSystemFile: boolean
 ) {
   const simpleFilter = getSimpleFilter(searchText)
   searchText = searchText.trim()
@@ -272,45 +435,63 @@ export function buildQuery(
   let builder = new QueryBuilder()
   if (kindModel.id !== KindFilterModel.ANY.id) {
     const { includes, excludes } = parseKindExpression(kindModel.value)
-    excludes.forEach((kind) => builder.ne(true, 'kMDItemContentTypeTree', kind))
+    excludes.forEach((kind) => builder.ne(true, kMDItem.ContentTypeTree, kind))
     builder.and((b) => {
-      includes.forEach((kind) =>
-        b.or((b2) => b2.eq(true, 'kMDItemContentTypeTree', kind))
-      )
+      includes.forEach((kind) => b.or((b2) => b2.eq(true, kMDItem.ContentTypeTree, kind)))
       return b
     })
   }
 
+  switch (simpleFilter) {
+    case SimpleFilterEnum.FOLDER:
+      builder.eq(true, kMDItem.ContentType, ContentType.FOLDER)
+      break
+    case SimpleFilterEnum.FILE:
+      builder.ne(true, kMDItem.ContentType, ContentType.FOLDER)
+      break
+  }
   return builder
+    .ne(!isFindSystemFile, kMDItem.SupportFileType, 'MDSystemFile')
     .and((b) => {
-      switch (simpleFilter) {
-        case SimpleFilterEnum.FOLDER:
-          return b.eq(true, 'kMDItemContentType', ContentType.FOLDER)
-        case SimpleFilterEnum.FILE:
-          return b.ne(true, 'kMDItemContentType', ContentType.FOLDER)
-      }
-      return b
-    })
-    .and((b) => {
-      // 判断是否是模糊匹配
-      if (searchText.startsWith('*') || searchText.endsWith('*')) {
-        b.eq(true, 'kMDItemFSName', searchText, true)
-      } else {
-        const quoteContent = parseQuoteContent(searchText)
-        if (quoteContent) {
-          // 全匹配
-          b.eq(true, 'kMDItemFSName', quoteContent, true)
-        } else {
-          // 默认为模糊匹配
-          const words = splitSearchText(searchText)
-          for (const word of words) {
-            b.like(true, 'kMDItemFSName', word)
+      const words = splitSearchText(searchText)
+      const contentQuery = new QueryBuilder()
+
+      for (const word of words) {
+        const queryTerm = parseQueryByWord(word)
+        b.and((b2) => {
+          switch (queryTerm.type) {
+            case QueryTermType.EXACT:
+              return b2
+                .eq(true, kMDItem.FSName, queryTerm.word, true)
+                .or((b3) => b3.eq(true, kMDItem.DisplayName, queryTerm.word, true))
+            case QueryTermType.PARTLY_FUZZY:
+              return b2
+                .eq(true, kMDItem.FSName, queryTerm.word, true)
+                .or((b3) => b3.eq(true, kMDItem.DisplayName, queryTerm.word, true))
+            case QueryTermType.EXCLUDED:
+              const hasExclude = !!queryTerm.word
+              return b2
+                .notLike(hasExclude, kMDItem.FSName, queryTerm.word)
+                .notLike(hasExclude, kMDItem.DisplayName, queryTerm.word)
+            case QueryTermType.FULLY_FUZZY:
+              return b2
+                .like(true, kMDItem.FSName, queryTerm.word)
+                .or((b3) => b3.like(true, kMDItem.DisplayName, queryTerm.word))
+          }
+        })
+
+        if (isFindContent) {
+          switch (queryTerm.type) {
+            case QueryTermType.EXCLUDED:
+              contentQuery.notLike(true, kMDItem.TextContent, queryTerm.word)
+              break
+            default:
+              contentQuery.like(true, kMDItem.TextContent, queryTerm.word)
+              break
           }
         }
       }
-      return b.or((b2) =>
-        b2.like(isFindContent, 'kMDItemTextContent', searchText)
-      )
+      return b.or(contentQuery)
     })
     .build()
 }

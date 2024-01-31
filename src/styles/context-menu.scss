@@ -1,0 +1,59 @@
+@mixin macos-common-context-menu {
+  & {
+    --mx-menu-active-backgroud: var(--mx-menu-hover-backgroud);
+    --mx-menu-open-backgroud: var(--mx-menu-hover-backgroud);
+
+    --mx-menu-active-text: var(--mx-menu-hover-text);
+    --mx-menu-open-text: var(--mx-menu-hover-text);
+
+    --mx-menu-placeholder-width: 0;
+  }
+
+  min-width: 180px;
+  padding: 4px;
+  font-weight: 500;
+  border: 1px solid var(--mx-menu-border-color);
+  border-radius: 5px;
+  @apply tw-backdrop-blur-xl;
+
+  $menu-item-padding-x: 10px;
+
+  .mx-context-menu-item {
+    border-radius: 5px;
+    padding: 2px $menu-item-padding-x;
+  }
+
+  .mx-context-menu-item-sperator {
+    margin-left: $menu-item-padding-x;
+    margin-right: $menu-item-padding-x;
+    @apply tw-bg-transparent;
+  }
+}
+
+.mx-context-menu.macos-dark {
+  & {
+    --mx-menu-backgroud: rgba(46, 50, 43, 0.7);
+    --mx-menu-hover-backgroud: #1857ba;
+    --mx-menu-border-color: #535553;
+
+    --mx-menu-text: #dfdfdf;
+    --mx-menu-divider: #414547;
+    --mx-menu-hover-text: #ffffff;
+  }
+
+  @include macos-common-context-menu();
+}
+
+.mx-context-menu.macos-light {
+  & {
+    --mx-menu-backgroud: rgba(221, 224, 215, 0.7);
+    --mx-menu-hover-backgroud: #4f8bf1;
+    --mx-menu-border-color: #c7c7c6;
+
+    --mx-menu-text: #232323;
+    --mx-menu-divider: #d0d0cd;
+    --mx-menu-hover-text: #ffffff;
+  }
+
+  @include macos-common-context-menu();
+}

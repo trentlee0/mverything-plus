@@ -1,6 +1,9 @@
 <template>
   <v-row no-gutters>
-    <v-col :cols="labelCols" class="tw-text-right">
+    <v-col
+      :cols="labelCols"
+      class="tw-text-right tw-text-neutral-500 dark:tw-text-neutral-300"
+    >
       <slot name="front">
         <slot name="label">
           <span>{{ label }}</span>

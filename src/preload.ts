@@ -1,32 +1,26 @@
 /// <reference types="node" />
 /// <reference types="electron" />
 
-import { FindFileMetadata, PrimaryFileMetadata, SimpleFileInfo } from '@/models'
+import { ExtraFileMetadata, FindFileMetadata, PrimaryFileMetadata, SimpleFileInfo } from '@/models'
 
-import { createReadStream, lstatSync, readdirSync, stat } from 'fs'
-import { readdir } from 'fs/promises'
-import path, { basename } from 'path'
+import { createReadStream, existsSync, lstatSync, mkdirSync, readlinkSync, stat, writeFileSync } from 'fs'
+import path, { basename, dirname, extname, isAbsolute, join, resolve } from 'path'
 import os, { UserInfo } from 'os'
 import { Buffer } from 'buffer'
 import { shell } from 'electron'
 import mdfind from 'mdfind'
-import { fileMetadata } from 'file-metadata'
 import chardet from 'chardet'
 import iconv from 'iconv-lite'
-import { ContentType, FileConstant } from '@/constant'
+import { ContentType, FileConstant, FindEndingStatus } from '@/constant'
 import { execAppleScript } from 'utools-utils/preload'
-import { MainPushItem, hideMainWindow } from 'utools-api'
+import { MainPushItem, getFileIcon, getPath } from 'utools-api'
+import { MdfindProcessManager } from '@/utils/mdfinds'
+import { readdir } from 'fs/promises'
+import { decodeUnicode } from './utils/strings'
+import { execFile } from 'child_process'
+import { parsePlist } from './utils/plist'
 
-let terminateFunc: Nullable<() => boolean> = null
-
-function kill() {
-  if (terminateFunc) {
-    const res = terminateFunc()
-    terminateFunc = null
-    return res
-  }
-  return true
-}
+const mdfindManager = new MdfindProcessManager()
 
 function spotlight(
   query: string,
@@ -34,7 +28,7 @@ function spotlight(
   attributes: Array<keyof PrimaryFileMetadata>,
   limit?: number
 ): Promise<Array<FindFileMetadata>> {
-  kill()
+  mdfindManager.killCurrent()
   return new Promise((resolve, reject) => {
     const res = mdfind({
       query,
@@ -43,15 +37,16 @@ function spotlight(
       directories,
       limit
     })
-    terminateFunc = res.terminate
+    const currentTask = mdfindManager.add(res)
     if (res.output) {
       const data: Array<FindFileMetadata> = []
       res.output.on('data', (chunk) => data.push(chunk))
       res.output.on('end', () => {
         // 防止已终止的 mdfind 子进程还返回数据
-        if (terminateFunc) {
+        if (!mdfindManager.isInterruptLastTask()) {
           resolve(data)
         }
+        mdfindManager.markTaskAsEnd(currentTask)
       })
       res.output.on('error', (err) => reject(err))
     } else {
@@ -60,48 +55,154 @@ function spotlight(
   })
 }
 
+function getFindAttributes(): Array<keyof PrimaryFileMetadata> {
+  return [
+    'kMDItemContentType',
+    'kMDItemKind',
+    'kMDItemDisplayName',
+    'kMDItemFSSize',
+    'kMDItemContentCreationDate',
+    'kMDItemContentModificationDate',
+    'kMDItemFSCreationDate',
+    'kMDItemFSContentChangeDate',
+    'kMDItemLastUsedDate'
+  ]
+}
+
+export function findCallback(
+  query: string,
+  directories: string[],
+  callback: (data: FindFileMetadata | null, index: number, endingStatus?: FindEndingStatus) => void,
+  filter: RegExp | null,
+  limit?: number
+) {
+  mdfindManager.killCurrent()
+  const res = mdfind({
+    query,
+    directories,
+    attributes: getFindAttributes(),
+    names: [],
+    limit
+  })
+  if (!res.output) return
+
+  const currentTask = mdfindManager.add(res)
+  let length = 0
+  if (filter) {
+    res.output.on('data', (chunk: FindFileMetadata) => {
+      if (!filter.test(chunk.kMDItemPath)) return
+      callback(chunk, ++length)
+    })
+  } else {
+    res.output.on('data', (chunk) => callback(chunk, ++length))
+  }
+  res.output.on('end', () => {
+    if (mdfindManager.isLastTask(currentTask)) {
+      callback(
+        null,
+        length,
+        mdfindManager.isInterruptLastTask() ? FindEndingStatus.INTERRUPTED : FindEndingStatus.NORMAL
+      )
+    }
+    mdfindManager.markTaskAsEnd(currentTask)
+  })
+}
+
 export async function findPush(
   query: string,
   directories: string[],
   limit: number
 ): Promise<Array<MainPushItem>> {
-  return (
-    await spotlight(
-      query,
-      directories,
-      ['kMDItemFSName', 'kMDItemContentType'],
-      limit
-    )
-  ).map((v) => ({
-    text: v.kMDItemFSName,
+  const attributes: Array<keyof PrimaryFileMetadata> = [
+    'kMDItemDisplayName',
+    'kMDItemContentType',
+    'kMDItemUserTags'
+  ]
+  return (await spotlight(query, directories, attributes, limit)).map((v) => ({
+    text: v.kMDItemDisplayName,
     title: v.kMDItemPath,
-    icon:
-      v.kMDItemContentType === ContentType.FOLDER ? 'folder.png' : 'file.png'
+    icon: getFileIconPath(v.kMDItemPath, v.kMDItemContentType),
+    tags: v.kMDItemUserTags?.map(decodeUnicode)
   }))
 }
 
-export function find(
-  query: string,
-  directories: string[]
-): Promise<Array<FindFileMetadata>> {
-  const attributes: Array<keyof PrimaryFileMetadata> = [
-    'kMDItemContentType',
-    'kMDItemKind',
-    'kMDItemFSName',
-    'kMDItemFSSize',
-    'kMDItemFSCreationDate',
-    'kMDItemFSContentChangeDate',
-    'kMDItemLastUsedDate'
-  ]
-  return spotlight(query, directories, attributes)
+function getEmbeddedIcon(contentType: string) {
+  if (contentType === ContentType.FOLDER) return 'folder.png'
+  if (contentType === ContentType.EXECUTABLE) return 'exec.png'
+  if (contentType === ContentType.VOLUME) return 'disk.png'
+  return null
+}
+
+function saveFileIcon(base64Icon: string, key: string) {
+  const data = Buffer.from(base64Icon.replace(/^data:image\/\w+;base64,/, ''), 'base64')
+  const basePath = resolve(getPath('temp'), 'utools-mverything-plus')
+  if (!existsSync(basePath)) {
+    mkdirSync(basePath)
+  }
+  const imgPath = `${basePath}/file-icon-${key}.png`
+  if (!existsSync(imgPath)) {
+    writeFileSync(imgPath, data)
+  }
+  return imgPath
+}
+
+function getAppIcon(appPath: string) {
+  if (lstatSync(appPath).isSymbolicLink()) {
+    const realPath = readlinkSync(appPath)
+    if (isAbsolute(realPath)) {
+      appPath = realPath
+    } else {
+      appPath = resolve(dirname(appPath), realPath)
+    }
+  }
+  return getFileIcon(appPath)
+}
+
+function getFileIconPath(filePath: string, contentType: string) {
+  const embeddedIcon = getEmbeddedIcon(contentType)
+  if (embeddedIcon) return embeddedIcon
+
+  const ext = extname(filePath)
+  if (ext) {
+    return (
+      'file://' +
+      (filePath.endsWith('.app')
+        ? saveFileIcon(getAppIcon(filePath), basename(filePath))
+        : saveFileIcon(getFileIcon(ext), ext))
+    )
+  }
+  return 'file.png'
+}
+
+export function getFileIconBase64(filePath: string, contentType: string) {
+  const embeddedIcon = getEmbeddedIcon(contentType)
+  if (embeddedIcon) return embeddedIcon
+
+  if (filePath.endsWith('.app')) return getAppIcon(filePath)
+
+  const ext = extname(filePath)
+  if (ext && contentType !== ContentType.DIRECTORY) return getFileIcon(ext)
+  if (dirname(filePath) === '/Volumes') return 'disk.png'
+  if (contentType === ContentType.DIRECTORY) return 'folder.png'
+  return 'file.png'
+}
+
+export async function find(query: string, directories: string[], filter: RegExp | null, limit?: number) {
+  const res = await spotlight(query, directories, getFindAttributes(), limit)
+  return filter ? res.filter((item) => filter.test(item.kMDItemPath)) : res
 }
 
 export function killFind() {
-  return kill()
+  return mdfindManager.killCurrent()
 }
 
 export function getFileMetadata(filePath: string) {
-  return fileMetadata(filePath)
+  return new Promise<ExtraFileMetadata>((resolve, reject) => {
+    execFile('mdls', ['-plist', '-', filePath], (error, stdout) => {
+      if (error) return reject(error)
+      resolve(parsePlist(stdout))
+    })
+  })
 }
 
 export function trashFile(filePath: string) {
@@ -133,31 +234,27 @@ export function readFilePartText(filePath: string): Promise<{
             size: st.size
           })
         } else {
-          throw new Error(
-            'The encoding of the detected file is null! File: ' + filePath
-          )
+          throw new Error('The encoding of the detected file is null! File: ' + filePath)
         }
       })
       .on('error', reject)
   })
 }
 
-export function readFileList(dirPath: string): Promise<Array<SimpleFileInfo>> {
-  return new Promise((resolve) => {
-    // 获取并过滤隐藏文件
-    readdir(dirPath).then((files) => {
-      const res = files
-        .filter((item) => !item.startsWith('.'))
-        .map((name) => {
-          const st = lstatSync(path.join(dirPath, name))
-          return {
-            name,
-            isFile: !st.isDirectory()
-          }
-        })
-      resolve(res)
+export async function readFileList(dirPath: string) {
+  const st = lstatSync(dirPath)
+  if (!st.isDirectory()) return null
+  // 获取并过滤隐藏文件
+  const files = await readdir(dirPath)
+  return files
+    .filter((item) => !item.startsWith('.') && item !== '$RECYCLE.BIN')
+    .map((name) => {
+      const st = lstatSync(path.join(dirPath, name))
+      return <SimpleFileInfo>{
+        name,
+        isDirectory: st.isDirectory()
+      }
     })
-  })
 }
 
 export function existsDir(dirPath: string): Promise<boolean> {
@@ -172,22 +269,78 @@ export function getOsUserInfo(): UserInfo<string> {
   return os.userInfo()
 }
 
-export function getBasename(path: string): string {
+export function getBasename(path: string) {
   return basename(path)
 }
 
-export function getVolumes(): { name: string; path: string }[] {
-  return readdirSync('/Volumes')
-    .filter((item) => item !== 'Macintosh HD')
-    .map((name) => ({ name, path: path.join('/Volumes', name) }))
+export function getDirname(path: string) {
+  return dirname(path)
 }
 
-export async function openInfoWindow(path: string) {
-  hideMainWindow()
+export function joinPath(...paths: string[]) {
+  return join(...paths)
+}
+
+export interface VolumeInfo {
+  name: string
+  path: string
+}
+
+interface DiskInfo {
+  AllDisks: string[]
+  AllDisksAndPartitions: AllDisksAndPartition[]
+  VolumesFromDisks: string[]
+  WholeDisks: string[]
+}
+
+interface AllDisksAndPartition {
+  Content: string
+  DeviceIdentifier: string
+  OSInternal: boolean
+  Partitions: Partition[]
+  Size: number
+}
+
+interface Partition {
+  Content: string
+  DeviceIdentifier: string
+  MountPoint?: string
+  Size: number
+  VolumeName?: string
+  VolumeUUID?: string
+}
+
+export async function getVolumes() {
+  return new Promise<Array<{ name: string; path: string }>>((resolve, reject) => {
+    execFile('diskutil', ['list', '-plist', 'external'], (error, stdout) => {
+      if (error) return reject(error)
+      resolve(
+        parsePlist<DiskInfo>(stdout).AllDisksAndPartitions.flatMap((item) => {
+          return item.Partitions.filter((p) => !!p.MountPoint).map((p) => {
+            const name = p.VolumeName as string
+            const path = p.MountPoint as string
+            return { name, path }
+          })
+        })
+      )
+    })
+  })
+}
+
+export async function openInfoWindow(paths: string | string[]) {
+  if (typeof paths === 'string') paths = [paths]
+  const openScript = (p: string) => {
+    if (!p.startsWith('/System')) return `open information window of ((POSIX file "${p}") as alias)`
+    return `
+      activate reveal (POSIX file "${p}") as alias
+      tell application "System Events"
+        click menu item "显示简介" of menu "文件" of menu bar item "文件" of menu bar 1 of process "Finder"
+      end tell`
+  }
   const script = `
     tell application "Finder"
-        open information window of ((POSIX file "${path}") as alias)
-        activate information window
+      ${paths.map(openScript).join('\n')}
+      activate information window
     end tell`
   await execAppleScript(script, true)
 }

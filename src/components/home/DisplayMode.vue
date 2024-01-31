@@ -8,6 +8,7 @@
               :class="{ active: isSelected }"
               class="tw-rounded-md tw-px-3 tw-py-1"
               @click="toggle"
+              :title="item.title"
             >
               <v-icon size="default">{{ item.icon }}</v-icon>
             </div>
@@ -20,17 +21,9 @@
 </template>
 
 <script lang="ts" setup>
-interface DisplayModeItem {
-  value: string | number
-  title: string
-  icon: string
-}
-
 const modelValue = defineModel<string | number>({ required: true })
 
-defineProps<{
-  items: Array<DisplayModeItem>
-}>()
+defineProps<{ items: Array<DisplayModeItem> }>()
 </script>
 
 <style lang="scss" scoped>

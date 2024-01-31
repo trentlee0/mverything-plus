@@ -29,17 +29,19 @@ export class SettingModel {
   nameHighlight: HighlightConfig
   kindFilters: Array<KindFilterModel>
   isOpenAsShortcutting: boolean
+  isUseSubInput: boolean
 
   constructor() {
-    this.databaseVersion = 5
+    // default setting
+    this.databaseVersion = 6
     this.isFindFileContent = false
-    this.searchRoot = SearchScopeModel.USER_ID
+    this.searchRoot = SearchScopeModel.COMMON_ID
     this.searchScopes = []
     this.searchKey = ':'
     this.keyList = [
       {
-        key: 'zip',
-        regex: '\\.zip$|\\.rar$|\\.7z$|\\.gz$|\\.bz2$'
+        key: 'notlibrary',
+        regex: '^((?!Library).)*$'
       }
     ]
     this.fileExtension = 'vue,ts,jsx,dart,ps1'
@@ -56,42 +58,43 @@ export class SettingModel {
     }
     this.kindFilters = KindFilterModel.defaultKindFilters()
     this.isOpenAsShortcutting = false
+    this.isUseSubInput = true
   }
 
   public static migrateDatabase(setting: SettingModel): boolean {
-    const defaultSetting = new SettingModel()
     let needed = false
-    if (!setting.databaseVersion || setting.databaseVersion < 1) {
-      setting.databaseVersion = 1
+    const check = (version: number) => {
+      if (!setting.databaseVersion || setting.databaseVersion < version) {
+        setting.databaseVersion = version
+        needed = true
+        return true
+      }
+      return false
+    }
+
+    const defaultSetting = new SettingModel()
+    if (check(1)) {
       setting.fileExtension = defaultSetting.fileExtension
       setting.pictureExtension = defaultSetting.pictureExtension
-      needed = true
     }
-    if (!setting.databaseVersion || setting.databaseVersion < 2) {
-      setting.databaseVersion = 2
-      needed = true
-    }
-    if (!setting.databaseVersion || setting.databaseVersion < 3) {
-      setting.databaseVersion = 3
+    if (check(3)) {
       setting.videoExtension = defaultSetting.videoExtension
       setting.audioExtension = defaultSetting.audioExtension
-      needed = true
     }
-    if (!setting.databaseVersion || setting.databaseVersion < 4) {
-      setting.databaseVersion = 4
+    if (check(4)) {
       setting.isAutoSearch = defaultSetting.isAutoSearch
       setting.isShowFilesInTempDir = defaultSetting.isShowFilesInTempDir
       setting.isUseSystemFileIcon = defaultSetting.isUseSystemFileIcon
-      needed = true
     }
-    if (!setting.databaseVersion || setting.databaseVersion < 5) {
-      setting.databaseVersion = 5
+    if (check(5)) {
       setting.searchScopes = defaultSetting.searchScopes
       setting.isShowFilesInKind = defaultSetting.isShowFilesInKind
       setting.nameHighlight = defaultSetting.nameHighlight
       setting.kindFilters = defaultSetting.kindFilters
       setting.isOpenAsShortcutting = defaultSetting.isOpenAsShortcutting
-      needed = true
+    }
+    if (check(6)) {
+      setting.isUseSubInput = defaultSetting.isUseSubInput
     }
     return needed
   }

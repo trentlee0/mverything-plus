@@ -3,14 +3,21 @@
     <OverlayProgress v-show="loading" :dark="isDark" />
     <div v-show="!loading">
       <FolderSubItem
+        class="tw-outline-none"
         v-for="(file, index) in files"
         :key="file.name"
         :file="file"
         :dir-path="dirPath"
         :active="activeIndex === index"
         :isDiffStyle="index % 2 === 1"
+        :tabindex="0"
         @click="handleActive(index)"
         @dblclick="handleDoubleClick(file.name)"
+        @contextmenu="handleRightClick(index, file.name)"
+        draggable="true"
+        @dragstart="handleDragStart($event, index, file.name)"
+        @focus="handleActive(index)"
+        @blur="handleActive(files.length)"
       />
       <FolderSubItem
         v-for="(i, index) in Math.max(0, maxLine - files.length)"
@@ -25,7 +32,7 @@
 <script lang="ts" setup>
 import FolderSubItem from './FolderSubItem.vue'
 import { SimpleFileInfo } from '@/models'
-import { shellOpenPath } from 'utools-api'
+import { shellOpenPath, shellShowItemInFolder, startDrag } from 'utools-api'
 import { ref, watch } from 'vue'
 import { useDark } from '@/hooks/useDark'
 import OverlayProgress from '@/components/common/OverlayProgress.vue'
@@ -44,6 +51,17 @@ function getFullPath(filename: string) {
 
 function handleDoubleClick(filename: string) {
   shellOpenPath(getFullPath(filename))
+}
+
+function handleRightClick(index: number, filename: string) {
+  handleActive(index)
+  shellShowItemInFolder(getFullPath(filename))
+}
+
+function handleDragStart(e: DragEvent, index: number, filename: string) {
+  e.preventDefault()
+  handleActive(index)
+  startDrag(getFullPath(filename))
 }
 
 const activeIndex = ref<number>()

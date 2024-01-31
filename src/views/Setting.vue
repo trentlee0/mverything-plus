@@ -47,12 +47,16 @@ import { useHotkeysScope } from '@/hooks/useHotkeys'
 import { ScopeName } from '@/constant'
 import { onActivated } from 'vue'
 import { useRouter } from 'vue-router'
+import { removeSubInput } from 'utools-api'
 
 const router = useRouter()
 const tab = ref<'general' | 'filter' | 'preview' | 'about'>('general')
 
 const { setScope } = useHotkeysScope(ScopeName.SETTING)
-onActivated(() => setScope())
+onActivated(() => {
+  setScope()
+  removeSubInput()
+})
 </script>
 
 <style lang="scss" scoped></style>

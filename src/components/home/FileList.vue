@@ -7,56 +7,44 @@
     class="tw-w-full"
     @scroll="handleScroll"
   >
-    <template #default="{ item, index }: { item: BaseFileInfo, index: number }">
+    <template #default="{ item, index }">
       <div
         class="tw-flex tw-w-full tw-select-none tw-items-center"
-        @contextmenu="onContextMenu($event, index)"
-        @mouseover="handleMouseEnter(index)"
-        @click="handleItemClick(index, item)"
-        @dblclick="contextActions.open"
+        @contextmenu="handleContextMenu($event, index)"
+        @click="handleItemClick(index)"
+        @dblclick="handleItemDoubleClick"
         draggable="true"
-        @dragstart="handleDragStart($event, index, item)"
+        @dragstart="handleItemDragStart($event, index)"
       >
         <v-list-item
           width="100%"
           :height="itemHeight"
           lines="one"
-          :color="selectedIndex === index ? 'blue' : ''"
-          :active="selectedIndex === index"
+          variant="text"
+          :base-color="isDark ? 'grey-lighten-5' : 'grey-darken-4'"
+          :active="selectedIndex === index || hasSelected(index)"
         >
           <template #prepend>
-            <v-avatar
-              :image="getIcon(item)"
-              :size="itemHeight - 10"
-              :rounded="0"
-            />
+            <v-avatar :image="getIcon(item)" :size="itemHeight - 10" :rounded="0" />
           </template>
           <template #title>
-            <span class="tw-font-bold">
-              <span
-                v-if="item.nameHighlight"
-                v-html="item.nameHighlight"
-              ></span>
-              <span v-else>
-                {{ item.name }}
-              </span>
+            <span class="tw-font-semibold">
+              <span v-if="item.highlightName" v-html="item.highlightName"></span>
+              <span v-else v-text="item.name"></span>
             </span>
           </template>
           <template #subtitle>
-            <div
-              class="tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap"
-            >
-              {{ item.path }}
+            <div class="tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap">
+              <span v-if="item.highlightPath" v-html="item.highlightPath"></span>
+              <span v-else v-text="item.path"></span>
             </div>
           </template>
           <template #append v-if="listMode">
             <div class="tw-w-7"></div>
-            <div
-              class="tw-font-mono tw-text-sm tw-text-neutral-500 dark:tw-text-neutral-300"
-            >
-              <div>{{ formatDatetime(item.updateDate ?? '') }}</div>
-              <div v-show="item.size !== null" class="tw-text-right">
-                {{ handleBytesToHuman(item.size ?? 0) }}
+            <div class="tw-font-mono tw-text-sm tw-text-neutral-500 dark:tw-text-neutral-300">
+              <div>{{ formatDatetime(item.updateDate) }}</div>
+              <div class="tw-text-right" v-show="item.size !== null">
+                {{ formatBytesToHuman(item.size ?? 0) }}
               </div>
             </div>
           </template>
@@ -64,28 +52,28 @@
       </div>
     </template>
   </v-virtual-scroll>
-
-  <FinderMenu ref="finderMenuRef" :actions="contextActions"></FinderMenu>
 </template>
 
 <script lang="ts" setup>
-import { useMouse } from '@/hooks/useMouse'
 import { BaseFileInfo } from '@/models'
-import { formatDatetime, handleBytesToHuman } from '@/utils/strings'
-import { onKeyDown } from '@vueuse/core'
+import { formatDatetime, formatBytesToHuman } from '@/utils/strings'
+import { onKeyDown, useKeyModifier } from '@vueuse/core'
 import debounce from 'lodash/debounce'
-import { computed, ref } from 'vue'
+import { computed, ref, watch, reactive } from 'vue'
 import { VVirtualScroll } from 'vuetify/components'
-import FinderMenu from './FinderMenu.vue'
 import { useSettingStore } from '@/store'
-import { getFileIcon, startDrag } from 'utools-api'
-import { isLegalIndex } from '@/utils/collections'
-import { reactive } from 'vue'
+import { startDrag } from 'utools-api'
+import { SortedSet, isLegalIndex } from '@/utils/collections'
+import { getFileIconBase64 } from '@/preload'
+import { useDark } from '@/hooks/useDark'
+import { useContextMenu } from '@/hooks/useContextMenu'
+import { useEventListener } from '@/hooks/useEventListener'
 
-const { isMouseMove } = useMouse()
+const { isDark } = useDark()
 const settingStore = useSettingStore()
 
-const finderMenuRef = ref<ComponentRef<typeof FinderMenu>>(null)
+const shiftState = useKeyModifier('Shift')
+const metaState = useKeyModifier('Meta')
 
 const scrollRef = ref<ComponentRef<typeof VVirtualScroll>>(null)
 
@@ -106,7 +94,7 @@ const props = withDefaults(
 )
 
 function getIcon(item: BaseFileInfo) {
-  return settingStore.isUseSystemFileIcon ? getFileIcon(item.path) : item.icon
+  return settingStore.isUseSystemFileIcon ? getFileIconBase64(item.path, item.type) : item.icon
 }
 
 const maxIndexInWindow = computed(() => props.displaySize - 1)
@@ -121,46 +109,104 @@ const emit = defineEmits<{
   copyItemName: []
   copyItemPath: []
   moveItemToTrash: []
+  openItems: []
+  showItemInfos: []
+  copyItems: []
+  copyItemNames: []
+  copyItemsPaths: []
 }>()
 
-const contextActions = reactive({
-  open: () => emit('openItem'),
-  openInFinder: () => emit('openItemInFinder'),
-  showInfo: () => emit('showItemInfo'),
-  quickLook: () => emit('quickLookItem'),
-  copy: () => emit('copyItem'),
-  copyName: () => emit('copyItemName'),
-  copyPath: () => emit('copyItemPath'),
-  moveToTrash: () => emit('moveItemToTrash')
+const multipleMenuItems = reactive<MenuItem[]>([
+  { label: '打开', click: () => emit('openItems') },
+  { type: 'separator' },
+  { label: '显示简介', click: () => emit('showItemInfos') },
+  { type: 'separator' },
+  { label: '拷贝', click: () => emit('copyItems') },
+  { label: '拷贝名称', click: () => emit('copyItemNames') },
+  { label: '拷贝路径', click: () => emit('copyItemsPaths') }
+])
+const singleMenuItems = reactive<MenuItem[]>([
+  { label: '打开', click: () => emit('openItem') },
+  { label: '在访达中显示', click: () => emit('openItemInFinder') },
+  { type: 'separator' },
+  { label: '显示简介', click: () => emit('showItemInfo') },
+  { label: '快速查看', click: () => emit('quickLookItem') },
+  { type: 'separator' },
+  { label: '拷贝', click: () => emit('copyItem') },
+  { label: '拷贝名称', click: () => emit('copyItemName') },
+  { label: '拷贝路径', click: () => emit('copyItemPath') },
+  { type: 'separator' },
+  { label: '移到废纸篓', click: () => emit('moveItemToTrash') }
+])
+const { showMenu, closeMenu } = useContextMenu()
+
+function isMultipleSelected(index: number) {
+  return selectedSet.size() !== 1 && selectedSet.has(index)
+}
+
+useEventListener('keydown', (e) => {
+  if (!['Shift', 'Meta', 'Alt', 'Control'].includes(e.key)) {
+    closeMenu()
+  }
 })
 
-function onContextMenu(e: MouseEvent, index: number) {
+function handleContextMenu(e: MouseEvent, index: number) {
   e.preventDefault()
 
-  emit('update:selectedIndex', index)
-  finderMenuRef.value?.showMenu(e.x, e.y)
+  if (isMultipleSelected(index)) {
+    showMenu(e, multipleMenuItems)
+  } else {
+    emit('update:selectedIndex', index)
+    showMenu(e, singleMenuItems)
+  }
 }
 
-function handleItemClick(index: number, item: BaseFileInfo) {
-  emit('update:selectedIndex', index)
-}
-
-function handleMouseEnter(index: number) {
-  if (!props.listMode || !isMouseMove.value) return
-  emit('update:selectedIndex', index)
-}
-
-function handleDragStart(e: DragEvent, index: number, item: BaseFileInfo) {
+function handleItemDragStart(e: DragEvent, index: number) {
   e.preventDefault()
-  emit('update:selectedIndex', index)
-  startDrag(item.path)
+  if (isMultipleSelected(index)) {
+    const paths = selectedSet.getList().map((index) => props.items[index].path)
+    startDrag(paths)
+  } else {
+    emit('update:selectedIndex', index)
+    startDrag(props.items[index].path)
+  }
+}
+
+function handleItemClick(index: number) {
+  if (!shiftState.value && !metaState.value) {
+    clearSelectedSet()
+  }
+  if (metaState.value) {
+    if (selectedSet.isEmpty()) {
+      selectedSet.add(props.selectedIndex)
+      selectedSet.add(index)
+      emit('update:selectedIndex', index)
+    } else if (selectedSet.has(index)) {
+      selectedSet.remove(index)
+      if (selectedSet.isEmpty()) {
+        selectedSet.add(0)
+        emit('update:selectedIndex', 0)
+      } else {
+        emit('update:selectedIndex', selectedSet.last())
+      }
+    } else {
+      selectedSet.add(index)
+      emit('update:selectedIndex', index)
+    }
+  } else {
+    emit('update:selectedIndex', index)
+  }
+}
+
+function handleItemDoubleClick() {
+  emit('openItem')
 }
 
 const firstIndexInWindow = ref(0)
 const handleScroll = debounce((e: Event) => {
   const { scrollTop, clientHeight, scrollHeight } = e.target as HTMLDivElement
   firstIndexInWindow.value = Math.round(scrollTop / props.itemHeight)
-  if (scrollTop + clientHeight === scrollHeight) {
+  if (import.meta.env.DEV && scrollTop + clientHeight === scrollHeight) {
     console.log('scroll end')
   }
 }, 30)
@@ -172,19 +218,13 @@ function locateTo(index: number) {
 let posInWindow = 0
 
 function refreshPosition(index: number) {
-  if (
-    firstIndexInWindow.value <= index &&
-    index < firstIndexInWindow.value + props.displaySize
-  ) {
+  if (firstIndexInWindow.value <= index && index < firstIndexInWindow.value + props.displaySize) {
     posInWindow = index - firstIndexInWindow.value
   }
 }
 
 function incrementPosition() {
-  return (
-    (posInWindow = Math.min(posInWindow + 1, maxIndexInWindow.value)) ===
-    maxIndexInWindow.value
-  )
+  return (posInWindow = Math.min(posInWindow + 1, maxIndexInWindow.value)) === maxIndexInWindow.value
 }
 
 function decrementPosition() {
@@ -212,13 +252,7 @@ function locateToEnd(index: number) {
  */
 function compareSelected(selectedIndex: number) {
   if (selectedIndex < firstIndexInWindow.value) return -1
-  if (
-    selectedIndex >
-    Math.min(
-      firstIndexInWindow.value + maxIndexInWindow.value,
-      props.items.length - 1
-    )
-  )
+  if (selectedIndex > Math.min(firstIndexInWindow.value + maxIndexInWindow.value, props.items.length - 1))
     return 1
   return 0
 }
@@ -230,11 +264,61 @@ function scrollTo(index: number) {
   }
 }
 
+const selectedSet = reactive(new SortedSet<number>())
+
+function clearSelectedSet() {
+  selectedSet.clear()
+}
+
+function hasSelected(index: number) {
+  return selectedSet.has(index)
+}
+
+function setSelectedRange(from: number, to: number) {
+  if (from > to) {
+    for (let i = from; i >= to; i--) {
+      selectedSet.add(i)
+    }
+  } else {
+    for (let i = from; i <= to; i++) {
+      selectedSet.add(i)
+    }
+  }
+}
+
+watch(
+  () => props.items,
+  () => clearSelectedSet()
+)
+
+watch(
+  () => props.selectedIndex,
+  (newValue, oldValue) => {
+    if (metaState.value) return
+    if (shiftState.value) {
+      if (selectedSet.isEmpty()) {
+        setSelectedRange(oldValue, newValue)
+      } else {
+        const first = selectedSet.first()
+        clearSelectedSet()
+        setSelectedRange(first, newValue)
+      }
+    } else {
+      clearSelectedSet()
+      selectedSet.add(newValue)
+    }
+  }
+)
+
 onKeyDown(['Meta', 'ArrowUp', 'ArrowDown'], (e) => {
   if (!props.isKeystroke) return
 
   e.preventDefault()
   if (e.metaKey && e.key === 'Meta') return
+
+  if (!shiftState.value) {
+    clearSelectedSet()
+  }
 
   if (e.metaKey) {
     return scrollTo(e.key === 'ArrowUp' ? 0 : props.items.length - 1)
@@ -276,6 +360,12 @@ defineExpose({
     if (isLegalIndex(props.items, index)) {
       emit('update:selectedIndex', index)
     }
+  },
+  clearSelectedIndexes() {
+    clearSelectedSet()
+  },
+  getSelectedList() {
+    return selectedSet.getList()
   }
 })
 </script>
