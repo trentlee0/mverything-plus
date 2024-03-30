@@ -280,7 +280,9 @@ import {
   openInfoWindow,
   findPush,
   findCallback,
-  getFileIconBase64
+  getFileIconBase64,
+  openFile,
+  existsFile
 } from '@/preload'
 import {
   shellShowItemInFolder,
@@ -301,7 +303,8 @@ import {
   hideMainWindow,
   copyFile,
   subInputFocus,
-  setSubInputValue
+  setSubInputValue,
+  showNotification
 } from 'utools-api'
 import emptyImg from '@/assets/empty_inbox.svg'
 import {
@@ -447,7 +450,7 @@ const sortRule = reactive<SortRule<SortObject>>({
 
 const isNoneSort = computed(() => sortRule.propName === 'none')
 
-function handleSortOrderChange(val: SortOrderEnum | keyof SortObject) {
+function handleSortOrderChange(val: string | number) {
   // 在开启最近使用的情况下，如果不是临时搜索目录，且没有类型筛选和查询词，则不需要排序
   if (isShowRecent.value && !isShowFilesInTempScope.value && notKindFilter.value && !query.value) {
     return
@@ -830,33 +833,53 @@ function isMultipleSelected() {
   return getSelectedList().length > 1
 }
 
+function checkFile(path: string) {
+  if (!existsFile(path)) {
+    const msg = `文件 “${path}” 不存在！`
+    showNotification(msg)
+    throw new Error(msg)
+  }
+}
+
 const menuActions = reactive({
   open() {
     if (isMultipleSelected()) {
       const paths = getSelectedList().map((index) => list.value[index].path)
       for (const path of paths) {
-        shellOpenPath(path)
+        checkFile(path)
+        openFile(path)
       }
     } else {
       if (isUndefined(selectedIndex.value)) return
-      shellOpenPath(list.value[selectedIndex.value].path)
+      const { path } = list.value[selectedIndex.value]
+      checkFile(path)
+      openFile(path)
     }
   },
   openInFinder() {
     if (!isMultipleSelected()) {
       if (isUndefined(selectedIndex.value)) return
-      shellShowItemInFolder(list.value[selectedIndex.value].path)
+      const { path } = list.value[selectedIndex.value]
+      checkFile(path)
+      shellShowItemInFolder(path)
     }
   },
   showInfo() {
     if (isMultipleSelected()) {
       const paths = getSelectedList().map((index) => list.value[index].path)
+      for (const path of paths) {
+        checkFile(path)
+      }
       openInfoWindow(paths)
     } else {
       if (isUndefined(selectedIndex.value)) return
-      openInfoWindow(list.value[selectedIndex.value].path)
+      const { path } = list.value[selectedIndex.value]
+      checkFile(path)
+      openInfoWindow(path)
     }
-    hideMainWindow()
+    setTimeout(() => {
+      hideMainWindow()
+    })
   },
   quickLook() {
     if (!isMultipleSelected()) {
@@ -873,7 +896,9 @@ const menuActions = reactive({
       const { path, type } = list.value[selectedIndex.value]
       copyFromPath(path, type)
     }
-    hideMainWindow()
+    setTimeout(() => {
+      hideMainWindow()
+    })
   },
   copyName() {
     if (isMultipleSelected()) {
@@ -886,7 +911,9 @@ const menuActions = reactive({
       if (isUndefined(selectedIndex.value)) return
       copyText(list.value[selectedIndex.value].name)
     }
-    hideMainWindow()
+    setTimeout(() => {
+      hideMainWindow()
+    })
   },
   copyPath() {
     if (isMultipleSelected()) {
@@ -899,7 +926,9 @@ const menuActions = reactive({
       if (isUndefined(selectedIndex.value)) return
       copyText(list.value[selectedIndex.value].path)
     }
-    hideMainWindow()
+    setTimeout(() => {
+      hideMainWindow()
+    })
   },
   moveToTrash() {
     if (!isMultipleSelected()) {

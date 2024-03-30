@@ -17,7 +17,7 @@ import { MainPushItem, getFileIcon, getPath } from 'utools-api'
 import { MdfindProcessManager } from '@/utils/mdfinds'
 import { readdir } from 'fs/promises'
 import { decodeUnicode } from './utils/strings'
-import { execFile } from 'child_process'
+import { execFile, execFileSync } from 'child_process'
 import { parsePlist } from './utils/plist'
 
 const mdfindManager = new MdfindProcessManager()
@@ -265,6 +265,10 @@ export function existsDir(dirPath: string): Promise<boolean> {
   })
 }
 
+export function existsFile(path: string) {
+  return existsSync(path)
+}
+
 export function getOsUserInfo(): UserInfo<string> {
   return os.userInfo()
 }
@@ -343,4 +347,8 @@ export async function openInfoWindow(paths: string | string[]) {
       activate information window
     end tell`
   await execAppleScript(script, true)
+}
+
+export function openFile(path: string) {
+  execFileSync('open', [path])
 }
