@@ -855,6 +855,9 @@ const menuActions = reactive({
       checkFile(path)
       openFile(path)
     }
+    setTimeout(() => {
+      hideMainWindow()
+    })
   },
   openInFinder() {
     if (!isMultipleSelected()) {
