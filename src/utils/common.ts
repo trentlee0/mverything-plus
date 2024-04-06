@@ -1,8 +1,7 @@
 import { copyImage, copyFile } from 'utools-api'
-import { ContentType } from '@/constant'
 
-export function copyFromPath(path: string, contentType: string) {
-  if (contentType === ContentType.IMAGE) {
+export function copyFromPath(path: string, isImage: boolean = false) {
+  if (isImage) {
     copyImage(path)
   } else {
     copyFile(path)

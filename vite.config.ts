@@ -12,10 +12,12 @@ export default defineConfig({
       external: ['electron']
     }
   },
+  define: {
+    __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: 'true'
+  },
   plugins: [
     vue({
       script: {
-        defineModel: true,
         propsDestructure: true
       }
     }),

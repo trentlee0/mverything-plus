@@ -141,7 +141,7 @@
                 v-for="(path, index) in dir.paths"
                 :key="`${path}-${index}`"
                 class="tw-w-full tw-cursor-default tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap tw-text-sm"
-                :title="path"
+                v-title
               >
                 {{ path }}
               </div>

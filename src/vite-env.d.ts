@@ -46,16 +46,6 @@ declare module 'utools-api' {
     | 'prependOnceListener'
   >
 
-  export interface SubInputChangeEvent {
-    text: string
-  }
-
-  export function setSubInput(
-    onChange: (event: SubInputChangeEvent) => void,
-    placeholder?: string,
-    isFocus?: boolean
-  ): boolean
-
   export function onPluginEnter(callback: (action: Action) => void): void
 
   export function onMainPush(

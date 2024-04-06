@@ -287,7 +287,6 @@ import {
 import {
   shellShowItemInFolder,
   copyText,
-  shellOpenPath,
   onPluginEnter,
   onPluginOut,
   getPath,
@@ -298,7 +297,6 @@ import {
   onMainPush,
   MainPushItem,
   setSubInput,
-  SubInputChangeEvent,
   subInputSelect,
   hideMainWindow,
   copyFile,
@@ -855,9 +853,7 @@ const menuActions = reactive({
       checkFile(path)
       openFile(path)
     }
-    setTimeout(() => {
-      hideMainWindow()
-    })
+    setTimeout(() => hideMainWindow())
   },
   openInFinder() {
     if (!isMultipleSelected()) {
@@ -880,9 +876,7 @@ const menuActions = reactive({
       checkFile(path)
       openInfoWindow(path)
     }
-    setTimeout(() => {
-      hideMainWindow()
-    })
+    setTimeout(() => hideMainWindow())
   },
   quickLook() {
     if (!isMultipleSelected()) {
@@ -897,11 +891,9 @@ const menuActions = reactive({
     } else {
       if (isUndefined(selectedIndex.value)) return
       const { path, type } = list.value[selectedIndex.value]
-      copyFromPath(path, type)
+      copyFromPath(path, type === ContentType.IMAGE)
     }
-    setTimeout(() => {
-      hideMainWindow()
-    })
+    setTimeout(() => hideMainWindow())
   },
   copyName() {
     if (isMultipleSelected()) {
@@ -914,9 +906,7 @@ const menuActions = reactive({
       if (isUndefined(selectedIndex.value)) return
       copyText(list.value[selectedIndex.value].name)
     }
-    setTimeout(() => {
-      hideMainWindow()
-    })
+    setTimeout(() => hideMainWindow())
   },
   copyPath() {
     if (isMultipleSelected()) {
@@ -929,9 +919,7 @@ const menuActions = reactive({
       if (isUndefined(selectedIndex.value)) return
       copyText(list.value[selectedIndex.value].path)
     }
-    setTimeout(() => {
-      hideMainWindow()
-    })
+    setTimeout(() => hideMainWindow())
   },
   moveToTrash() {
     if (!isMultipleSelected()) {
@@ -1208,7 +1196,7 @@ onMainPush?.(
       return true
     }
     if (action.option.title) {
-      shellOpenPath(action.option.title)
+      openFile(action.option.title)
     }
   }
 )
@@ -1218,7 +1206,7 @@ function createSubInputAfterCheck() {
 
   if (settingStore.isUseSubInput) {
     setSubInput(
-      (e: SubInputChangeEvent) => {
+      (e) => {
         query.value = e.text
         handleQueryChange()
       },

@@ -10,6 +10,7 @@
       </div>
       <div
         class="tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap tw-text-base tw-font-semibold"
+        v-title
       >
         {{ file?.name }}
       </div>

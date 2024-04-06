@@ -115,7 +115,7 @@
               v-for="typeItem in item.typeTree"
               :key="typeItem"
               class="tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap"
-              :title="typeItem"
+              v-title
             >
               {{ typeItem }}
             </div>
