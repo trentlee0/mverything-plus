@@ -1,4 +1,4 @@
-import { SortOrderEnum } from '@/constant'
+import { ContentType, SortOrderEnum } from '@/constant'
 import * as icons from './icons'
 import isNull from 'lodash/isNull'
 import { BaseFileInfo, FindFileMetadata } from '@/models'
@@ -29,7 +29,7 @@ export function mapToFileInfo(item: FindFileMetadata) {
     icon: icons.getIcon(item),
     size: isNull(item.kMDItemFSSize) ? null : parseInt(item.kMDItemFSSize),
     kind: item.kMDItemKind,
-    type: item.kMDItemContentType,
+    type: item.kMDItemKind === '文件夹' ? ContentType.FOLDER : item.kMDItemContentType,
     createDate: item.kMDItemFSCreationDate ?? item.kMDItemContentCreationDate,
     updateDate: item.kMDItemFSContentChangeDate ?? item.kMDItemContentModificationDate,
     usedDate: item.kMDItemLastUsedDate
