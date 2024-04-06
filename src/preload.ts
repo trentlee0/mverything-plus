@@ -3,7 +3,16 @@
 
 import { ExtraFileMetadata, FindFileMetadata, PrimaryFileMetadata, SimpleFileInfo } from '@/models'
 
-import { createReadStream, existsSync, lstatSync, mkdirSync, readlinkSync, stat, writeFileSync } from 'fs'
+import {
+  createReadStream,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readlinkSync,
+  stat,
+  statSync,
+  writeFileSync
+} from 'fs'
 import path, { basename, dirname, extname, isAbsolute, join, resolve } from 'path'
 import os, { UserInfo } from 'os'
 import { Buffer } from 'buffer'
@@ -351,4 +360,14 @@ export async function openInfoWindow(paths: string | string[]) {
 
 export function openFile(path: string) {
   execFileSync('open', [path])
+}
+
+export function isLocalFile(path: string) {
+  try {
+    const st = statSync(path)
+    if (st.isDirectory()) return true
+    return !(st.size !== 0 && st.blocks === 0)
+  } catch (err) {
+    return false
+  }
 }

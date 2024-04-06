@@ -56,7 +56,7 @@
 
     <div :style="{ height: `calc(${isPreview ? '45%' : '50%'})` }" class="tw-overflow-y-scroll">
       <v-card-text class="tw-text-base">
-        <FormItem
+        <!-- <FormItem
           class="tw-text-center tw-text-xl tw-font-bold"
           :text="item.name"
           split-symbol=""
@@ -64,7 +64,28 @@
           :text-cols="12"
           :tooltip="item.name"
           :tooltip-delay="1000"
-        />
+        /> -->
+
+        <FormItem
+          class="tw-text-center tw-text-xl tw-font-bold"
+          split-symbol=""
+          :label-cols="0"
+          :text-cols="12"
+        >
+          <template #default>
+            <div class="tw-flex tw-w-full tw-items-center tw-justify-center">
+              <div class="tw-flex-nowrap tw-overflow-hidden tw-text-ellipsis" v-title>{{ item.name }}</div>
+              <v-icon
+                class="tw-ml-2 tw-flex-none tw-text-neutral-400 dark:tw-text-neutral-500"
+                size="small"
+                title="尚未下载"
+                v-show="item.isCloudFile"
+              >
+                {{ mdiCloudDownloadOutline }}
+              </v-icon>
+            </div>
+          </template>
+        </FormItem>
 
         <div class="tw-h-5"></div>
 
@@ -143,6 +164,7 @@ import { ref, watch } from 'vue'
 import isNull from 'lodash/isNull'
 import { VImg } from 'vuetify/lib/components/index.mjs'
 import debounce from 'lodash/debounce'
+import { mdiCloudDownloadOutline } from '@mdi/js'
 
 const props = withDefaults(
   defineProps<{

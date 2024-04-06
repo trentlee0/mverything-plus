@@ -282,7 +282,8 @@ import {
   findCallback,
   getFileIconBase64,
   openFile,
-  existsFile
+  existsFile,
+  isLocalFile
 } from '@/preload'
 import {
   shellShowItemInFolder,
@@ -486,6 +487,7 @@ async function loadFileInfo(item: BaseFileInfo) {
     ...item,
     thumbnail: getFileIconBase64(item.path, item.type),
     typeTree: [],
+    isCloudFile: fileInfo.value?.isCloudFile ?? false,
     previewType: fileInfo.value?.previewType ?? FilePreviewType.NONE
   }
 
@@ -524,11 +526,19 @@ async function loadFileInfo(item: BaseFileInfo) {
     } else {
       fileInfo.value.previewType = FilePreviewType.NONE
     }
-  }
-  if (fileInfo.value.previewType === FilePreviewType.NONE) {
-    if (fileInfo.value.typeTree.includes(ContentType.TEXT)) {
-      fileInfo.value.previewType = FilePreviewType.TEXT
+
+    if (fileInfo.value.previewType === FilePreviewType.NONE) {
+      if (fileInfo.value.typeTree.includes(ContentType.TEXT)) {
+        fileInfo.value.previewType = FilePreviewType.TEXT
+      }
     }
+  }
+
+  if (!isLocalFile(fileInfo.value.path)) {
+    fileInfo.value.previewType = FilePreviewType.NONE
+    fileInfo.value.isCloudFile = true
+  } else {
+    fileInfo.value.isCloudFile = false
   }
 
   await loadFileContent(fileInfo.value)

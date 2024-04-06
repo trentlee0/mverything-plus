@@ -45,9 +45,9 @@ export interface ExtraFileMetadata {
 
 export interface BaseFileInfo {
   name: string
-  highlightName?: string
+  displayName: string
   path: string
-  highlightPath?: string
+  displayPath: string
   icon: string
   size: number | null
   type: string
@@ -61,6 +61,7 @@ export interface PreviewFileInfo extends BaseFileInfo {
   thumbnail?: string
   typeTree: string[]
   previewType: FilePreviewType
+  isCloudFile: boolean
   itemCount?: number
   pixelWidth?: number
   pixelHeight?: number

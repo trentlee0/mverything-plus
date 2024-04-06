@@ -29,14 +29,12 @@
           </template>
           <template #title>
             <span class="tw-font-semibold">
-              <span v-if="item.highlightName" v-html="item.highlightName"></span>
-              <span v-else v-text="item.name"></span>
+              <span v-html="item.displayName"></span>
             </span>
           </template>
           <template #subtitle>
             <div class="tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap">
-              <span v-if="item.highlightPath" v-html="item.highlightPath"></span>
-              <span v-else v-text="item.path"></span>
+              <span v-html="item.displayPath"></span>
             </div>
           </template>
           <template #append v-if="listMode">

@@ -1,12 +1,11 @@
 import { ContentType, SortOrderEnum } from '@/constant'
 import * as icons from './icons'
 import isNull from 'lodash/isNull'
-import { BaseFileInfo, FindFileMetadata } from '@/models'
+import { BaseFileInfo, FindFileMetadata, SearchScopeModel } from '@/models'
 import { match } from 'pinyin-pro'
 import { SearchTextPattern } from './query'
 import { escapeRegExp } from 'lodash'
 import { getBasename, getDirname, joinPath } from '@/preload'
-import { isLegalIndex } from './collections'
 
 /**
  * 根据自定义关键字，获取过滤正则表达式
@@ -19,13 +18,37 @@ export function getCustomKeywordRegExp(customKeyword: string, keyMap: Map<string
   return null
 }
 
+function homedir(...names: string[]) {
+  return joinPath(SearchScopeModel.USER.paths[0], ...names)
+}
+
+function getDisplayName(item: FindFileMetadata) {
+  return item.kMDItemDisplayName || getBasename(item.kMDItemPath)
+}
+
+function getDisplayPath(item: FindFileMetadata) {
+  const path = item.kMDItemPath
+  const replacements = [
+    { prefix: homedir('Library', 'CloudStorage') + '/', replace: '' },
+    { prefix: homedir('Library', 'Mobile Documents'), replace: 'iCloud Drive' },
+    { prefix: homedir(), replace: '~' }
+  ]
+  for (const { prefix, replace } of replacements) {
+    if (path.startsWith(prefix)) return path.replace(prefix, replace)
+  }
+  return path
+}
+
 /**
  * 映射到文件 Model 对象
  */
 export function mapToFileInfo(item: FindFileMetadata) {
+  const name = getDisplayName(item)
   const mappedItem: BaseFileInfo = {
-    name: item.kMDItemDisplayName || getBasename(item.kMDItemPath),
+    name,
+    displayName: name,
     path: item.kMDItemPath,
+    displayPath: getDisplayPath(item),
     icon: icons.getIcon(item),
     size: isNull(item.kMDItemFSSize) ? null : parseInt(item.kMDItemFSSize),
     kind: item.kMDItemKind,
@@ -77,10 +100,7 @@ export function sortFileInfos(
   sortOrder: SortOrderEnum
 ) {
   return data.sort(
-    createCompareFn(
-      { sortOrder, propName: fieldName },
-      { sortOrder: SortOrderEnum.ASC, propName: 'name' }
-    )
+    createCompareFn({ sortOrder, propName: fieldName }, { sortOrder: SortOrderEnum.ASC, propName: 'name' })
   )
 }
 
@@ -112,8 +132,7 @@ function highlightString(
 ) {
   const preTag = `<span style="${style}">`
   const matchStrings = getPinyinMatches(source, pattern.words)
-  const p =
-    pattern.expression + (matchStrings.length ? '|' + matchStrings.map(escapeRegExp).join('|') : '')
+  const p = pattern.expression + (matchStrings.length ? '|' + matchStrings.map(escapeRegExp).join('|') : '')
   const matched: boolean[] = recordMatched ? new Array(pattern.words.length).fill(false) : []
   const highlight = source.replaceAll(new RegExp(p, 'ig'), (s, ...args) => {
     if (recordMatched) {
@@ -122,25 +141,19 @@ function highlightString(
     }
     return preTag + s + `</span>`
   })
-  const allMatched: boolean | undefined = recordMatched
-    ? matched.reduce((p, c) => p && c, true)
-    : undefined
+  const allMatched: boolean | undefined = recordMatched ? matched.reduce((p, c) => p && c, true) : undefined
   return { highlight, allMatched }
 }
 
 /**
  * 高亮文件 Model 数组中的文件名
  */
-export function highlightFileInfo(
-  item: BaseFileInfo,
-  pattern: SearchTextPattern,
-  highlightStyle: string
-) {
+export function highlightFileInfo(item: BaseFileInfo, pattern: SearchTextPattern, highlightStyle: string) {
   const { highlight, allMatched } = highlightString(pattern, item.name, highlightStyle, true)
-  item.highlightName = highlight
+  item.displayName = highlight
   if (!allMatched) {
     const { highlight } = highlightString(pattern, getBasename(item.path), highlightStyle)
-    item.highlightPath = joinPath(getDirname(item.path), highlight)
+    item.displayPath = joinPath(getDirname(item.displayPath), highlight)
   }
   return item
 }
