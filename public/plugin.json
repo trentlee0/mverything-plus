@@ -1,8 +1,8 @@
 {
-  "pluginName": "Mverything Plus",
+  "pluginName": "文件搜索",
   "author": "Trent0",
   "homepage": "https://github.com/trentlee0/mverything-plus",
-  "description": "快速搜索、查找 Mac 上的文件",
+  "description": "快速查找 Mac 上的文件",
   "version": "2.2.0",
   "logo": "logo.png",
   "main": "index.html",
