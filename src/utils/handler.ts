@@ -34,7 +34,7 @@ function getDisplayPath(item: FindFileMetadata) {
     { prefix: homedir(), replace: '~' }
   ]
   for (const { prefix, replace } of replacements) {
-    if (path.startsWith(prefix)) return path.replace(prefix, replace)
+    if (path.startsWith(prefix)) return replace + path.substring(prefix.length)
   }
   return path
 }
