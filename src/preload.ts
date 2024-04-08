@@ -255,8 +255,9 @@ export async function readFileList(dirPath: string) {
   if (!st.isDirectory()) return null
   // 获取并过滤隐藏文件
   const files = await readdir(dirPath)
+  const excludedFiles = ['Icon\r', '$RECYCLE.BIN', 'desktop.ini']
   return files
-    .filter((item) => !item.startsWith('.') && item !== '$RECYCLE.BIN')
+    .filter((item) => !item.startsWith('.') && !excludedFiles.includes(item))
     .map((name) => {
       const st = lstatSync(path.join(dirPath, name))
       return <SimpleFileInfo>{
