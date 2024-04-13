@@ -56,16 +56,6 @@
 
     <div :style="{ height: `calc(${isPreview ? '45%' : '50%'})` }" class="tw-overflow-y-scroll">
       <v-card-text class="tw-text-base">
-        <!-- <FormItem
-          class="tw-text-center tw-text-xl tw-font-bold"
-          :text="item.name"
-          split-symbol=""
-          :label-cols="0"
-          :text-cols="12"
-          :tooltip="item.name"
-          :tooltip-delay="1000"
-        /> -->
-
         <FormItem
           class="tw-text-center tw-text-xl tw-font-bold"
           split-symbol=""
@@ -100,7 +90,7 @@
             </span>
           </template>
         </FormItem>
-        <FormItem label="路径" :text="item.path" :tooltip="item.path" />
+        <FormItem label="路径" :text="item.displayPath" :tooltip="item.path" />
         <FormItem
           v-if="!isNull(item.size)"
           label="大小"

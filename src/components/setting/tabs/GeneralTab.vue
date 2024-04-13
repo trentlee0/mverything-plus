@@ -143,7 +143,7 @@
                 class="tw-w-full tw-cursor-default tw-overflow-hidden tw-text-ellipsis tw-whitespace-nowrap tw-text-sm"
                 v-title
               >
-                {{ path }}
+                {{ getDisplayPath(path) }}
               </div>
             </v-col>
             <v-spacer />
@@ -182,6 +182,7 @@ import { ref } from 'vue'
 import { useToast } from 'vue-toastification'
 import { SearchScopeModel } from '@/models'
 import { getBasename } from '@/preload'
+import { getDisplayPath } from '@/utils/handler'
 import HeaderRow from '@/components/setting/table/HeadRow.vue'
 import BodyRow from '@/components/setting/table/BodyRow.vue'
 import FlexTable from '@/components/setting/table/FlexTable.vue'

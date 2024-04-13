@@ -24,16 +24,10 @@
       "cmds": [
         "find",
         "查找",
-        {
-          "type": "files",
-          "label": "在此文件夹中搜索",
-          "fileType": "directory",
-          "minNum": 1,
-          "maxNum": 1
-        },
+        "文件搜索",
         {
           "type": "window",
-          "label": "在此文件夹中搜索",
+          "label": "在当前文件夹中搜索",
           "match": {
             "app": [
               "Finder.app"
@@ -41,8 +35,15 @@
           }
         },
         {
+          "type": "files",
+          "label": "此文件夹中搜索",
+          "fileType": "directory",
+          "minNum": 1,
+          "maxNum": 1
+        },
+        {
           "type": "regex",
-          "label": "文件夹中搜索",
+          "label": "此文件夹中搜索",
           "match": "/^(\\/[^/\\n\\r\\f\\v]+)+\\/?$/",
           "minLength": 1,
           "maxLength": 300

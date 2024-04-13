@@ -26,8 +26,7 @@ function getDisplayName(item: FindFileMetadata) {
   return item.kMDItemDisplayName || getBasename(item.kMDItemPath)
 }
 
-function getDisplayPath(item: FindFileMetadata) {
-  const path = item.kMDItemPath
+export function getDisplayPath(path: string) {
   const replacements = [
     { prefix: homedir('Library', 'CloudStorage') + '/', replace: '' },
     { prefix: homedir('Library', 'Mobile Documents'), replace: 'iCloud Drive' },
@@ -48,7 +47,7 @@ export function mapToFileInfo(item: FindFileMetadata) {
     name,
     displayName: name,
     path: item.kMDItemPath,
-    displayPath: getDisplayPath(item),
+    displayPath: getDisplayPath(item.kMDItemPath),
     icon: icons.getIcon(item),
     size: isNull(item.kMDItemFSSize) ? null : parseInt(item.kMDItemFSSize),
     kind: item.kMDItemKind,

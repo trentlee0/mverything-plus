@@ -163,7 +163,7 @@
           />
         </Hover>
         <span v-show="isFindInTempScope" :title="searchScopeTitle">
-          {{ tempDirectory }}
+          {{ getDisplayPath(tempDirectory) }}
         </span>
       </v-col>
       <v-col class="tw-flex tw-items-center tw-justify-center">
@@ -266,7 +266,8 @@ import {
   mapToFileInfo,
   sortFileInfos,
   SortRule,
-  getCustomKeywordRegExp
+  getCustomKeywordRegExp,
+  getDisplayPath
 } from '@/utils/handler'
 import { getFileExtension } from '@/utils/strings'
 import {
