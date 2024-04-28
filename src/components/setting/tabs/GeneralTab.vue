@@ -26,12 +26,18 @@
       hide-details
     ></v-checkbox>
 
-    <v-checkbox
-      label="使用 uTools 内置搜索框"
-      v-model="settingStore.isUseSubInput"
-      density="comfortable"
-      hide-details
-    ></v-checkbox>
+    <v-checkbox v-model="settingStore.isUseSubInput" density="comfortable" hide-details>
+      <template #label>
+        <span>使用 uTools 内置搜索框</span>
+        <v-tooltip text="开启后，将使用 uTools 内置搜索框，部分快捷键无法使用。" location="top">
+          <template v-slot:activator="{ props }">
+            <div @click.prevent>
+              <v-icon class="tw-ml-1 tw-cursor-default" v-bind="props">{{ mdiHelpCircleOutline }}</v-icon>
+            </div>
+          </template>
+        </v-tooltip>
+      </template>
+    </v-checkbox>
 
     <Subheader title="搜索范围">
       <template #append>
@@ -123,9 +129,7 @@
             :class="{ 'tw-text-neutral-700 dark:tw-text-neutral-200': !checkMutableScope(dir) }"
           >
             <v-col :cols="3">
-              <div
-                class="tw-rounded-md tw-border tw-border-transparent focus-within:tw-border-neutral-400"
-              >
+              <div class="tw-rounded-md tw-border tw-border-transparent focus-within:tw-border-neutral-400">
                 <input
                   class="tw-w-full tw-text-ellipsis tw-rounded-md tw-p-1 tw-outline-none"
                   v-model.lazy="dir.label"
@@ -149,9 +153,7 @@
             <v-spacer />
             <v-col :cols="2" class="tw-flex tw-justify-center">
               <div v-if="checkMutableScope(dir)">
-                <v-btn variant="text" density="compact" @click="handleAddDirectory(dir, index)">
-                  添加
-                </v-btn>
+                <v-btn variant="text" density="compact" @click="handleAddDirectory(dir, index)"> 添加 </v-btn>
                 <v-btn
                   variant="text"
                   color="error"
@@ -186,7 +188,7 @@ import { getDisplayPath } from '@/utils/handler'
 import HeaderRow from '@/components/setting/table/HeadRow.vue'
 import BodyRow from '@/components/setting/table/BodyRow.vue'
 import FlexTable from '@/components/setting/table/FlexTable.vue'
-import { mdiClose, mdiViewHeadline } from '@mdi/js'
+import { mdiClose, mdiViewHeadline, mdiHelpCircleOutline } from '@mdi/js'
 
 const toast = useToast()
 const settingStore = useSettingStore()

@@ -124,7 +124,7 @@ const menuShortcuts = reactive([
   },
   {
     action: '快速查看',
-    keyboard: 'Space'
+    keyboard: 'Space, ⌘ Y'
   },
   {
     action: '拷贝文件',
