@@ -16,7 +16,6 @@ import {
 import path, { basename, dirname, extname, isAbsolute, join, resolve } from 'path'
 import os, { UserInfo } from 'os'
 import { Buffer } from 'buffer'
-import { shell } from 'electron'
 import mdfind from 'mdfind'
 import chardet from 'chardet'
 import iconv from 'iconv-lite'
@@ -25,7 +24,7 @@ import { execAppleScript } from 'utools-utils/preload'
 import { MainPushItem, getFileIcon, getPath } from 'utools-api'
 import { MdfindProcessManager } from '@/utils/mdfinds'
 import { readdir } from 'fs/promises'
-import { decodeUnicode } from './utils/strings'
+import { decodeUnicode, escapeQuote } from './utils/strings'
 import { execFile, execFileSync } from 'child_process'
 import { parsePlist } from './utils/plist'
 
@@ -214,8 +213,14 @@ export function getFileMetadata(filePath: string) {
   })
 }
 
-export function trashFile(filePath: string) {
-  shell.trashItem(filePath)
+export function trashFile(filePath: string | string[]) {
+  if (typeof filePath === 'string') filePath = [filePath]
+  const script = `
+    tell application "Finder"
+      set moveList to {${filePath.map(p => `"${escapeQuote(p)}" as POSIX file`).join(',')}}
+      move moveList to trash
+    end tell`
+  execFileSync('osascript', ['-e', script])
 }
 
 export function readFilePartText(filePath: string): Promise<{
@@ -341,9 +346,10 @@ export async function getVolumes() {
   })
 }
 
-export async function openInfoWindow(paths: string | string[]) {
+export function openInfoWindow(paths: string | string[]) {
   if (typeof paths === 'string') paths = [paths]
   const openScript = (p: string) => {
+    p = escapeQuote(p)
     if (!p.startsWith('/System')) return `open information window of ((POSIX file "${p}") as alias)`
     return `
       activate reveal (POSIX file "${p}") as alias
@@ -356,7 +362,7 @@ export async function openInfoWindow(paths: string | string[]) {
       ${paths.map(openScript).join('\n')}
       activate information window
     end tell`
-  await execAppleScript(script, true)
+  execFileSync('osascript', ['-e', script])
 }
 
 export function openFile(path: string) {

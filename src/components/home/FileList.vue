@@ -121,7 +121,9 @@ const multipleMenuItems = reactive<MenuItem[]>([
   { type: 'separator' },
   { label: '拷贝', click: () => emit('copyItems') },
   { label: '拷贝名称', click: () => emit('copyItemNames') },
-  { label: '拷贝路径', click: () => emit('copyItemsPaths') }
+  { label: '拷贝路径', click: () => emit('copyItemsPaths') },
+  { type: 'separator' },
+  { label: '移到废纸篓', click: () => emit('moveItemToTrash') }
 ])
 const singleMenuItems = reactive<MenuItem[]>([
   { label: '打开', click: () => emit('openItem') },

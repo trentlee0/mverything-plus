@@ -67,7 +67,7 @@
             :list-mode="isListMode"
             :display-size="9"
             :is-keystroke="isCurrentScope"
-            @update:selected-index="handleSelect"
+            @update:selected-index="handleSelectChange"
             @open-item="menuActions.open"
             @open-item-in-finder="menuActions.openInFinder"
             @show-item-info="menuActions.showInfo"
@@ -259,7 +259,7 @@ import {
   SimpleFilterEnum
 } from '@/constant'
 import { useCommonStore, useSettingStore } from '@/store'
-import { toMap, limitArray } from '@/utils/collections'
+import { toMap, limitArray, getFinalIndex } from '@/utils/collections'
 import {
   highlightFileInfo,
   highlightFileInfos,
@@ -474,9 +474,13 @@ const fileInfo = ref<PreviewFileInfo>()
 const previewLoading = ref(false)
 const findWords = ref<string[]>([])
 
-function handleSelect(index: number) {
+function handleSelectChange(index?: number) {
   selectedIndex.value = index
-  loadFileInfo(list.value[index])
+  if (isUndefined(index)) {
+    fileInfo.value = undefined
+  } else {
+    loadFileInfo(list.value[index])
+  }
 }
 
 async function loadFileInfo(item: BaseFileInfo) {
@@ -780,11 +784,10 @@ function listAll() {
 function refreshList(newList: Array<BaseFileInfo>) {
   list.value = newList
   if (newList.length) {
-    handleSelect(0)
+    handleSelectChange(0)
     fileListRef.value?.locateTo(0)
   } else {
-    selectedIndex.value = undefined
-    fileInfo.value = undefined
+    handleSelectChange(undefined)
   }
 }
 
@@ -880,14 +883,15 @@ const menuActions = reactive({
       for (const path of paths) {
         checkFile(path)
       }
+      hideMainWindow()
       openInfoWindow(paths)
     } else {
       if (isUndefined(selectedIndex.value)) return
       const { path } = list.value[selectedIndex.value]
       checkFile(path)
+      hideMainWindow()
       openInfoWindow(path)
     }
-    setTimeout(() => hideMainWindow())
   },
   quickLook() {
     if (!isMultipleSelected()) {
@@ -933,10 +937,19 @@ const menuActions = reactive({
     setTimeout(() => hideMainWindow())
   },
   moveToTrash() {
-    if (!isMultipleSelected()) {
+    if (isMultipleSelected()) {
+      const indexes = getSelectedList()
+      indexes.sort((a, b) => b - a)
+      trashFile(indexes.map((index) => list.value[index].path))
+      for (const index of indexes) {
+        list.value.splice(index, 1)
+      }
+      handleSelectChange(getFinalIndex(list.value, indexes[indexes.length - 1]))
+    } else {
       if (isUndefined(selectedIndex.value)) return
       trashFile(list.value[selectedIndex.value].path)
       list.value.splice(selectedIndex.value, 1)
+      handleSelectChange(getFinalIndex(list.value, selectedIndex.value))
     }
   }
 })

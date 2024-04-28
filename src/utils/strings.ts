@@ -68,3 +68,7 @@ export function decodeUnicode(s: string) {
       .map((code) => parseInt(code, 16))
   )
 }
+
+export function escapeQuote(s: string) {
+  return s.replace(/"/g, '\\"')
+}

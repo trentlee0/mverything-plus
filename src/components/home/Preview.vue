@@ -9,6 +9,7 @@
         v-else-if="item.previewType === FilePreviewType.FOLDER"
         :dir-path="item.path"
         :files="item.files ?? []"
+        @trash="handleTrash"
       ></FolderViewer>
       <TextViewer
         v-else-if="item.previewType === FilePreviewType.TEXT"
@@ -155,6 +156,7 @@ import isNull from 'lodash/isNull'
 import { VImg } from 'vuetify/lib/components/index.mjs'
 import debounce from 'lodash/debounce'
 import { mdiCloudDownloadOutline } from '@mdi/js'
+import { trashFile } from '@/preload'
 
 const props = withDefaults(
   defineProps<{
@@ -168,6 +170,15 @@ const props = withDefaults(
     loading: false
   }
 )
+
+function handleTrash(fileIndex: number) {
+  if (!props.item?.files || props.item?.files.length === 0) return
+
+  const path = `${props.item.path}/${props.item.files[fileIndex].name}`
+  trashFile(path)
+  props.item.files.splice(fileIndex, 1)
+  props.item.itemCount = props.item.files.length
+}
 
 const imgRef = ref<ComponentRef<typeof VImg>>(null)
 let delta = 1

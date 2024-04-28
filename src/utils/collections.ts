@@ -27,6 +27,10 @@ export function limitArray<T>(arr: T[], limit?: number) {
   return limit !== undefined && arr.length > limit ? arr.slice(0, limit) : arr
 }
 
+export function getFinalIndex<T>(arr: T[], index: number) {
+  return arr.length ? Math.min(index, arr.length - 1) : undefined
+}
+
 export class SortedSet<T> {
   private list: Array<T>
   private map: Map<T, number>

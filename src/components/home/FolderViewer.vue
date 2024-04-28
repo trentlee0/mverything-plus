@@ -39,8 +39,14 @@ import OverlayProgress from '@/components/common/OverlayProgress.vue'
 import { openFile } from '@/preload'
 import { useContextMenu } from '@/hooks/useContextMenu'
 import { copyFromPath } from '@/utils/common'
+import { getFinalIndex } from '@/utils/collections'
+import { isUndefined } from 'lodash'
 
 const { showMenu } = useContextMenu()
+
+const emit = defineEmits<{
+  trash: [fileIndex: number]
+}>()
 
 const maxLine = ref(8)
 const props = defineProps<{
@@ -59,17 +65,29 @@ function handleDoubleClick(filename: string) {
 }
 
 function handleRightClick(e: MouseEvent, index: number, filename: string) {
-  handleActive(index)
   const path = getFullPath(filename)
   showMenu(e, [
-    { label: '打开', click: () => openFile(path) },
-    { label: '在访达中显示', click: () => shellShowItemInFolder(path) },
+    {
+      label: '打开',
+      click: () => {
+        openFile(path)
+        handleActive(index)
+      }
+    },
+    {
+      label: '在访达中显示',
+      click: () => {
+        shellShowItemInFolder(path)
+        handleActive(index)
+      }
+    },
     { type: 'separator' },
     {
       label: '拷贝',
       click: () => {
         copyFromPath(path)
         hideMainWindow()
+        handleActive(index)
       }
     },
     {
@@ -77,6 +95,7 @@ function handleRightClick(e: MouseEvent, index: number, filename: string) {
       click: () => {
         copyText(filename)
         hideMainWindow()
+        handleActive(index)
       }
     },
     {
@@ -84,6 +103,15 @@ function handleRightClick(e: MouseEvent, index: number, filename: string) {
       click: () => {
         copyText(path)
         hideMainWindow()
+        handleActive(index)
+      }
+    },
+    { type: 'separator' },
+    {
+      label: '移到废纸篓',
+      click: () => {
+        emit('trash', index)
+        handleActive(getFinalIndex(props.files, index))
       }
     }
   ])
@@ -96,8 +124,8 @@ function handleDragStart(e: DragEvent, index: number, filename: string) {
 }
 
 const activeIndex = ref<number>()
-function handleActive(index: number) {
-  if (props.files && index < props.files.length) {
+function handleActive(index?: number) {
+  if (!isUndefined(index) && props.files && index < props.files.length) {
     activeIndex.value = index
   } else {
     activeIndex.value = undefined
