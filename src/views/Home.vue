@@ -626,6 +626,7 @@ function resetSearch() {
   }
 }
 
+const isOutingSearchInterrupted = ref(false)
 const { lastState, isEqualLast } = useLastState<{
   query: string
   kindFilter: KindFilterModel
@@ -669,15 +670,16 @@ function search(query: string, limit?: number) {
   // 在非列出所有文件的情况下，只输入空字符就不搜索
   if (
     (!statement.trim() && !isListAll()) ||
-    isEqualLast({
-      // 仅在临时目录下列出所有文件时，才不去掉结尾的空白字符
-      query: isShowFilesInTempScope.value ? statement : statement.trimEnd(),
-      keywordPrefix: keywordPrefix,
-      kindFilter: searchKind.value,
-      sortName: sortRule.propName,
-      scopes: searchScopeDirectories.value,
-      isFindFileContent: settingStore.isFindFileContent
-    })
+    (!isOutingSearchInterrupted.value &&
+      isEqualLast({
+        // 仅在临时目录下列出所有文件时，才不去掉结尾的空白字符
+        query: isShowFilesInTempScope.value ? statement : statement.trimEnd(),
+        keywordPrefix: keywordPrefix,
+        kindFilter: searchKind.value,
+        sortName: sortRule.propName,
+        scopes: searchScopeDirectories.value,
+        isFindFileContent: settingStore.isFindFileContent
+      }))
   ) {
     if (!statement.trim()) resetSearch()
     return
@@ -1262,15 +1264,15 @@ onPluginEnter(async (action: Action) => {
     query.value = ''
   }
 
-  if (isShowRecent.value) {
+  if (isOutingSearchInterrupted.value) {
+    search(query.value)
+  } else if (isShowFilesInTempScope.value) {
+    listAll()
+  } else if (isShowRecent.value) {
     startRecentUsedSearch()
   }
 
   createSubInputAfterCheck()
-
-  if (isShowFilesInTempScope.value) {
-    listAll()
-  }
 })
 onPluginOut(() => {
   if (isFindInTempScope.value) {
@@ -1278,7 +1280,7 @@ onPluginOut(() => {
     query.value = ''
     tempDirectory.value = ''
   } else {
-    killFind()
+    isOutingSearchInterrupted.value = !!killFind()
   }
   qlWin.hide()
 })
