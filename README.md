@@ -1,6 +1,6 @@
-# Mverything Plus
+# 文件搜索
 
-Mverything Plus，快速搜索、查找 Mac 上的文件，基于 `mdfind` 命令构建。
+文件搜索，快速查找 Mac 上的文件，原 Mverything Plus，基于 `mdfind` 命令构建。
 
 ## 背景
 
@@ -22,7 +22,7 @@ Mverything Plus，快速搜索、查找 Mac 上的文件，基于 `mdfind` 命�
 
 ## 安装
 
-直接在 uTools 插件应用市场搜索“Mverything Plus”安装
+直接在 uTools 插件应用市场搜索“文件搜索”安装
 
 ## 开发
 
@@ -90,3 +90,7 @@ pnpm build
 - 搜索不到已存在的文件？
 
   请尝试重建索引，见 https://support.apple.com/zh-cn/HT201716
+
+- 主搜索框搜索结果与插件内搜索结果不一致？
+
+  设计上就是如此，考虑到在主搜索框搜索的效率问题，搜索结果不包含系统文件，而插件内的搜索结果则是包含系统文件的。
